@@ -9,26 +9,11 @@ const conexion = {
     port: 5432,
     ssl: { rejectUnauthorized: false },
   };
-  
+
 app.get('/listUsers', function (req, res) {
 
+console.log("whatever");
 
-    
-    const client = new Client(conexion);
-    
-    client.connect((e) => {
-      if (e) console.error(e);
-    });
-    
-    const query = "INSERT INTO \"PRUEBA\" (username) VALUES ('ANA K, VEN A MI');";
-    client.query(query, (e, r) => {
-      if (e) {
-        console.error(e);
-        return;
-      }
-      console.log("Se inserto en DB");
-      client.end();
-    });
 })
 
 var server = app.listen(8081, function () {
