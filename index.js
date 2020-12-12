@@ -22,7 +22,7 @@ const postPrueba = (request, response) => {
     const {username} = request.body
 
     pool.query(
-      'INSERT INTO PRUEBA (username) VALUE ($1)',
+      'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
       [username],
       (error) => {
         if (error) {
