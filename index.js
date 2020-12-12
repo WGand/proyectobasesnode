@@ -18,6 +18,14 @@ const getPrueba = (request, response) => {
   })
 }
 
+const postPrueba = (request, response) => {
+    pool.query('INSERT INTO \"PRUEBA\" (username) VALUES ('Ana K, ven a mi');', (error, results) => {
+      if (error) {
+        throw error
+      }
+      response.status(200).json(results.rows)
+    })
+  }
 
 app
   .route('/prueba')
