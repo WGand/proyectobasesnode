@@ -19,12 +19,18 @@ const getPrueba = (request, response) => {
 }
 
 const postPrueba = (request, response) => {
-    pool.query('INSERT INTO \"PRUEBA\" (username) VALUES ('Ana K, ven a mi');', (error, results) => {
-      if (error) {
-        throw error
-      }
-      response.status(200).json(results.rows)
-    })
+    const {username} = request.body
+
+    pool.query(
+      'INSERT INTO PRUEBA (username) VALUE ($1)',
+      [username],
+      (error) => {
+        if (error) {
+          throw error
+        }
+        response.status(201).json({status: 'success', message: 'Funciono'})
+      },
+    )
   }
 
 app
@@ -32,7 +38,7 @@ app
   // GET endpoint
   .get(getPrueba)
   // POST endpoint
-  //.post(addBook)
+  .post(postPrueba)
 
 // Start server
 app.listen(process.env.PORT || 3002, () => {
