@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(cors())
 
 const getPrueba = (request, response) => {
-  pool.query('SELECT * FROM \"PRUEBA\"', (error, results) => {
+  pool.query('SELECT * FROM PRUEBA', (error, results) => {
     if (error) {
       throw error
     }
@@ -20,22 +20,32 @@ const getPrueba = (request, response) => {
 
 const postPrueba = (request, response) => {
     const {username} = request.body
-    try{
-    pool.query(
-      'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
-      [username],
-      (error) => {
-        if (error) {
-          throw error
-        }
-        response.status(201).json({status: 'success', message: 'Funciono'})
-      },
-    )
-    }
-    catch (e){
-      console.error('Error:', e.message)
-    }
+    if(buscarBasura(username)){
+      pool.query(
+        'INSERT INTO PRUEBA (username) VALUES ($1)',
+        [username],
+        (error) => {
+          if (error) {
+            throw error
+          }
+          response.status(201).json({status: 'success', message: 'Funciono'})
+        },
+      )
   }
+  }
+
+function buscarBasura(basura){
+  pool.query(
+    'SELECT * FROM PRUEBA WHERE username =$1',
+    [basura],
+    (error) => {
+      if (error) {
+        throw error
+      }
+      response.status(201).json({status: 'success', message: 'Funciono'})
+    },
+  )
+}
 
 app
   .route('/prueba')
