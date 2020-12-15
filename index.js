@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(cors())
 
 const getPrueba = (request, response) => {
-  pool.query('SELECT * FROM PRUEBA', (error, results) => {
+  pool.query('SELECT * FROM \"PRUEBA\" ', (error, results) => {
     if (error) {
       throw error
     }
@@ -22,7 +22,7 @@ const postPrueba = (request, response) => {
     const {username} = request.body
     if(buscarBasura(username)){
       pool.query(
-        'INSERT INTO PRUEBA (username) VALUES ($1)',
+        'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
         [username],
         (error) => {
           if (error) {
@@ -36,7 +36,7 @@ const postPrueba = (request, response) => {
 
 function buscarBasura(basura){
   pool.query(
-    'SELECT * FROM PRUEBA WHERE username =$1',
+    'SELECT * FROM \"PRUEBA\" WHERE username =$1',
     [basura],
     (error) => {
       if (error) {
