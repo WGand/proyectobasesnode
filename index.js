@@ -36,15 +36,8 @@ const postPrueba = (request, response) => {
 
 function buscarBasura(basura){
   pool.query(
-    'SELECT * FROM \"PRUEBA\" WHERE username =$1',
-    [basura],
-    (error) => {
-      if (error) {
-        throw error
-      }
-      response.status(201).json({status: 'success', message: 'Funciono'})
-    },
-  )
+    'SELECT * FROM \"PRUEBA\" WHERE username =$1',[basura])
+  console.log(pool.results)
 }
 
 app
