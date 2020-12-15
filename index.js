@@ -41,6 +41,6 @@ app
   .post(postPrueba)
 
 // Start server
-app.listen(process.env.PORT || 3002, () => {
+app.listen(process.env.PORT , () => {
   console.log(`Server listening`)
 })
