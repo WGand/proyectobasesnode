@@ -20,7 +20,7 @@ const getPrueba = (request, response) => {
 
 const postPrueba = (request, response) => {
     const {username} = request.body
-
+    try{
     pool.query(
       'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
       [username],
@@ -31,6 +31,10 @@ const postPrueba = (request, response) => {
         response.status(201).json({status: 'success', message: 'Funciono'})
       },
     )
+    }
+    catch (e){
+      console.error('Error:', e.message)
+    }
   }
 
 app
