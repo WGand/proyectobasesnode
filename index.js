@@ -19,31 +19,58 @@ const getPrueba = (request, response) => {
 }
 
 const postPrueba = (request, response) => {
-    const {username} = request.body
-    if(buscarBasura(username)){
-      pool.query(
-        'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
-        [username],
-        (error) => {
-          if (error) {
-            throw error
-          }
-          response.status(201).json({status: 'success', message: 'Funciono'})
-        },
-      )
-  }
-  }
-
-function buscarBasura(basura){
+  const {username} = request.body
   pool.query(
     'SELECT * FROM \"PRUEBA\" WHERE username =$1',
-    [basura],
-    (err, result) => {
-      if (err) {
-        return console.error('Error executing query', err.stack)
+    [username],
+    (error, result) => {
+      if (error) {
+        throw error
       }
-      if(result){return true}
-    })
+      else{
+        if (result.rowCount > 0){
+          response.status(203).json({status: 'cagada', message: 'matate, PS: Omar'})
+        }
+        else{
+          pool.query(
+            'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
+            [username],
+            (error) => {
+              if (error) {
+                throw error
+              }
+              response.status(201).json({status: 'success', message: 'Funciono'})
+            },
+          )
+        }
+      }
+    },
+  )
+}
+
+
+//const postPrueba = (request, response) => {
+//    const {username} = request.body
+//    var existe = pool.query('SELECT * FROM \"PRUEBA\" WHERE username =$1',username)
+//    console.log(existe)
+    //buscarBasura(username).then(data => console.log(data))
+//    if(existe){
+//      pool.query(
+//        'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
+//        [username],
+//        (error) => {
+//          if (error) {
+//            throw error
+//          }
+//          response.status(201).json({status: 'success', message: 'Funciono'})
+//        },
+//      )
+//  }
+// }
+
+function buscarBasura(basura){
+  return pool.query(
+    'SELECT * FROM \"PRUEBA\" WHERE username =$1',basura).then(a => !!a);
 }
 
 app
@@ -54,6 +81,6 @@ app
   .post(postPrueba)
 
 // Start server
-app.listen(process.env.PORT , () => {
+app.listen(process.env.PORT | 3002, () => {
   console.log(`Server listening`)
 })
