@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const {pool} = require('./config')
+const { query } = require('express')
 
 const app = express()
 
@@ -18,61 +19,34 @@ const getPrueba = (request, response) => {
   })
 }
 
-const postPrueba = (request, response) => {
+const postPrueba = async (request, response) => {
   const {username} = request.body
-  pool.query(
-    'SELECT * FROM \"PRUEBA\" WHERE username =$1',
-    [username],
-    (error, result) => {
-      if (error) {
-        throw error
-      }
-      else{
-        if (result.rowCount > 0){
-          response.status(203).json({status: 'cagada', message: 'matate, PS: Omar'})
+  if(await existe(username)){
+    pool.query(
+      'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
+      [username],
+      (error) => {
+        if (error) {
+          throw error
         }
-        else{
-          pool.query(
-            'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
-            [username],
-            (error) => {
-              if (error) {
-                throw error
-              }
-              response.status(201).json({status: 'success', message: 'Funciono'})
-            },
-          )
-        }
-      }
-    },
-  )
+        response.status(201).json({status: 'success', message: 'Funciono'})
+      },
+    )
+  }
+  else{
+    response.status(203).json({status: 'failure', message: 'El registro existe'})
+  }
 }
 
-
-//const postPrueba = (request, response) => {
-//    const {username} = request.body
-//    var existe = pool.query('SELECT * FROM \"PRUEBA\" WHERE username =$1',username)
-//    console.log(existe)
-    //buscarBasura(username).then(data => console.log(data))
-//    if(existe){
-//      pool.query(
-//        'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
-//        [username],
-//        (error) => {
-//          if (error) {
-//            throw error
-//          }
-//          response.status(201).json({status: 'success', message: 'Funciono'})
-//        },
-//      )
-//  }
-// }
-
-function buscarBasura(basura){
-  return pool.query(
-    'SELECT * FROM \"PRUEBA\" WHERE username =$1',basura).then(a => !!a);
+const existe = async usuario => {
+  let response = await pool.query('SELECT * FROM \"PRUEBA\" WHERE username =$1',[usuario])
+  if(response.rowCount > 0){
+    return false
+  }
+  else{
+    return true
+  }
 }
-
 app
   .route('/prueba')
   // GET endpoint
