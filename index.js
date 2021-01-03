@@ -2,7 +2,6 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const {pool} = require('./config')
-const { query, response } = require('express')
 
 const app = express()
 
@@ -41,6 +40,7 @@ app
   .post(POSTLugar)
 
 // Start server
-app.listen(process.env.PORT | 3000, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
   console.log(`Server listening`)
 })
