@@ -41,6 +41,6 @@ app
   .post(POSTLugar)
 
 // Start server
-app.listen(process.env.PORT | 3002, () => {
+app.listen(process.env.PORT | 3000, () => {
   console.log(`Server listening`)
 })
