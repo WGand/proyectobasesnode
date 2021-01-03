@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const {pool} = require('./config')
-const { query } = require('express')
+const { query, response } = require('express')
 
 const app = express()
 
@@ -10,8 +10,8 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(cors())
 
-const getPrueba = (request, response) => {
-  pool.query('SELECT * FROM \"PRUEBA\" ', (error, results) => {
+const GETLugar = async (request, response) => {
+  pool.query('SELECT * FROM \"LUGAR\"', (error, results) => {
     if (error) {
       throw error
     }
@@ -19,40 +19,26 @@ const getPrueba = (request, response) => {
   })
 }
 
-const postPrueba = async (request, response) => {
-  const {username} = request.body
-  if(await existe(username)){
-    pool.query(
-      'INSERT INTO \"PRUEBA\" (username) VALUES ($1)',
-      [username],
-      (error) => {
-        if (error) {
-          throw error
-        }
-        response.status(201).json({status: 'success', message: 'Funciono'})
-      },
-    )
-  }
-  else{
-    response.status(203).json({status: 'failure', message: 'El registro existe'})
-  }
+const POSTLugar = async (request, response) => {
+  const {nombre,tipo,lugar} = request.body
+  pool.query(
+    'INSERT INTO \"LUGAR\" (nombre, tipo, fk_lugar) VALUES ($1, $2, $3)',
+    [nombre, tipo, lugar],
+    (error) => {
+      if (error) {
+        throw error
+      }
+      response.status(201).json({status: 'success', message: 'Funciono'})
+    },
+  )
 }
 
-const existe = async usuario => {
-  let response = await pool.query('SELECT * FROM \"PRUEBA\" WHERE username =$1',[usuario])
-  if(response.rowCount > 0){
-    return false
-  }
-  else{
-    return true
-  }
-}
 app
   .route('/prueba')
   // GET endpoint
-  .get(getPrueba)
+  .get(GETLugar)
   // POST endpoint
-  .post(postPrueba)
+  .post(POSTLugar)
 
 // Start server
 app.listen(process.env.PORT | 3002, () => {
