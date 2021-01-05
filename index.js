@@ -209,7 +209,7 @@ app
 app
   .route("/especificoLugar")
 
-  .get(postEspecificoLugar);
+  .post(postEspecificoLugar);
 app
   .route("/control")
 
