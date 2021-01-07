@@ -86,27 +86,42 @@ const postUsuario = async (request, response) => {
   const { correo, contrasena, tipo } = request.body;
   if (tipo == "natural") {
     pool.query(
-      'SELECT * FROM "NATURAL" WHERE correo = $1 AND WHERE contrasena = $2',
+      'SELECT * FROM "NATURAL" WHERE correo_electronico = $1 AND contrasena = $2',
       [correo, contrasena],
       (error, results) => {
         if (error) {
           throw error;
         }
-        response.status(201).json(results);
+        response.status(201).json(results.rows);
       }
     );
   } else if (tipo == "empleado") {
     pool.query(
-      'SELECT * FROM "EMPLEADO" WHERE correo = $1 AND WHERE contrasena = $2',
+      'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $1 AND contrasena = $2',
       [correo, contrasena],
       (error, results) => {
         if (error) {
           throw error;
         }
-        response.status(201).json(results);
+        response.status(201).json(results.rows);
       }
     );
   }
+};
+
+
+const buscarLugar = async (request, response) => {
+  const {lugar} = request.body
+  pool.query(
+    'SELECT lugar_id FROM "LUGAR" WHERE nombre=$1 and tipo =$2',
+    [lugar, 'PARROQUIA'],
+    (error, results) =>{
+      if (error){
+        throw error;
+      }
+      response.status(201).json(results.rows)
+    }
+  );
 };
 
 const postNatural = async (request, response) => {
@@ -120,9 +135,11 @@ const postNatural = async (request, response) => {
     segundo_apellido,
     contrasena,
     tipo_cedula,
+    telefono,
+    lugar
   } = request.body;
   pool.query(
-    'INSERT INTO "NATURAL" (rif, correo, cedula, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, contrasena, tipo_cedula) VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)',
+    'INSERT INTO "NATURAL" (rif, correo_electronico, cedula_identidad, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, contrasena, tipo_cedula, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9, $10)',
     [
       rif,
       correo,
@@ -133,12 +150,21 @@ const postNatural = async (request, response) => {
       segundo_apellido,
       contrasena,
       tipo_cedula,
+      lugar
     ],
     (error, results) => {
       if (error) {
         throw error;
       }
-      response.status(201).json(results);
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_natural) VALUES ($1, $2)',
+      [telefono, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results);
+      }
+      )
     }
   );
 };
@@ -175,16 +201,6 @@ const postJuridico = async (request, response) => {
   );
 };
 
-const buscarLugar = async (lugar) => {
-  let response = await pool.query(
-    'SELECT lugar_id FROM "LUGAR" WHERE nombre=$1',
-    [lugar]
-  );
-  if (response.rowCount > 0) {
-    return response.fields[0]["columnID"];
-  }
-};
-
 const getControl = async (request, response) => {
   const { tipo } = request.body;
   pool.query(
@@ -199,6 +215,30 @@ const getControl = async (request, response) => {
   );
 };
 
+const http = require('http');
+const jsreport = require('jsreport');
+
+const getwhatever = async =>{
+  http.createServer((req, res) => {
+    jsreport.render({
+      template: {
+        content: '<h1>Hello world</h1>',
+        engine: 'handlebars',
+        recipe: 'chrone-pdf'
+      }
+    }).then((out)  => {
+      out.stream.pipe(res);
+    }).catch((e) => {
+      res.end(e.message);
+    });
+
+  })
+}
+
+app
+  .route("/buscarLugar")
+  .post(buscarLugar)
+
 app
   .route("/lugar")
   // GET endpoint
@@ -209,7 +249,9 @@ app
 app
   .route("/especificoLugar")
 
-  .post(postEspecificoLugar);
+  .post(postEspecificoLugar)
+
+  .get(getwhatever);
 app
   .route("/control")
 
