@@ -109,7 +109,6 @@ const postUsuario = async (request, response) => {
   }
 };
 
-
 const buscarLugar = async (request, response) => {
   const {lugar} = request.body
   pool.query(
@@ -169,6 +168,94 @@ const postNatural = async (request, response) => {
   );
 };
 
+const postValidarRif = async(request, response) =>{
+  const{
+    rif,
+    tipo
+  } = request.body
+  switch(tipo){
+    case 'JURIDICO':
+      pool.query('SELECT * FROM "JURIDICO" WHERE rif=$1',
+      [rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    case 'NATURAL':
+      pool.query('SELECT * FROM "NATURAL" WHERE rif=$1',
+      [rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    case 'EMPLEADO':
+      pool.query('SELECT * FROM "EMPLEADO" WHERE rif=$1',
+      [rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    default:
+      response.status(404).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
+  }
+}
+
+const postValidarCorreo = async(request, response) =>{
+  const{
+    correo_electronico,
+    tipo
+  } = request.body
+  switch(tipo){
+    case 'JURIDICO':
+      pool.query('SELECT * FROM "JURIDICO" WHERE correo_electronico=$1',
+      [correo_electronico],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    case 'NATURAL':
+      pool.query('SELECT * FROM "NATURAL" WHERE correo_electronico=$1',
+      [correo_electronico],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    case 'EMPLEADO':
+      pool.query('SELECT * FROM "EMPLEADO" WHERE correo_electronico=$1',
+      [correo_electronico],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rowCount);
+      }
+      )
+      break;
+    default:
+      response.status(404).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
+  }
+}
+
 const postJuridico = async (request, response) => {
   const {
     rif,
@@ -177,7 +264,6 @@ const postJuridico = async (request, response) => {
     razon_social,
     pagina_web,
     capital_disponible,
-    UCABMART,
     contrasena,
   } = request.body;
   pool.query(
@@ -189,8 +275,91 @@ const postJuridico = async (request, response) => {
       razon_social,
       pagina_web,
       capital_disponible,
-      UCABMART,
       contrasena,
+    ],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(201).json(results);
+    }
+  );
+};
+
+const postEmpleado = async (request, response) => {
+  const {
+    rif,
+    correo,
+    cedula,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
+    contrasena,
+    telefono,
+    lugar,
+    hora_inicio,
+    hora_fin,
+    dia
+  } = request.body;
+  pool.query(
+    'INSERT INTO "EMPLEADO" (rif, correo_electronico, cedula_identidad, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, contrasena, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)',
+    [
+      rif,
+      correo,
+      cedula,
+      primer_nombre,
+      segundo_nombre,
+      primer_apellido,
+      segundo_apellido,
+      contrasena,
+      lugar
+    ],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_empleado) VALUES ($1, $2)',
+      [telefono, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
+        [hora_inicio, hora_fin, dia],
+        (error, results) => {
+          if (error){
+            throw error;
+          }
+          pool.query('INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
+          [rif, results.rows[0]['horario_id']],
+          (error, results) => {
+            if (error){
+              throw error;
+            }
+            response.status(201).json({ status: "success", message: "Funciono" });    
+          }
+          )
+        }
+        )
+      }
+      )
+    }
+  );
+};
+
+const postHorario = async (request, response) => {
+  const {
+    hora_inicio,
+    hora_fin,
+    dia
+  } = request.body;
+  pool.query(
+    'INSERT INTO "HORARIO" (hora_inicio, hora_fin, dia) VALUES ($1, $2, $3)',
+    [
+      hora_inicio,
+      hora_fin,
+      dia
     ],
     (error, results) => {
       if (error) {
@@ -215,25 +384,21 @@ const getControl = async (request, response) => {
   );
 };
 
-const http = require('http');
-const jsreport = require('jsreport');
+app
+  .route("/rif")
+  .post(postValidarRif)
 
-const getwhatever = async =>{
-  http.createServer((req, res) => {
-    jsreport.render({
-      template: {
-        content: '<h1>Hello world</h1>',
-        engine: 'handlebars',
-        recipe: 'chrone-pdf'
-      }
-    }).then((out)  => {
-      out.stream.pipe(res);
-    }).catch((e) => {
-      res.end(e.message);
-    });
+app
+  .route("/correo")
+  .post(postValidarCorreo)
 
-  })
-}
+app
+  .route("/horario")
+  .post(postHorario)
+
+app
+  .route("/empleado")
+  .post(postEmpleado)
 
 app
   .route("/buscarLugar")
@@ -241,33 +406,22 @@ app
 
 app
   .route("/lugar")
-  // GET endpoint
-  //.get(GETLugar)
-  // POST endpoint
-  .post(POSTLugar);
-// Start server
+  .post(POSTLugar)
 app
   .route("/especificoLugar")
-
   .post(postEspecificoLugar)
-
-  .get(getwhatever);
 app
   .route("/control")
-
-  .post(getControl);
+  .post(getControl)
 app
   .route("/login")
-
-  .post(postUsuario);
+  .post(postUsuario)
 app
   .route("/usuarioNatural")
-
-  .post(postNatural);
+  .post(postNatural)
 app
   .route("/usuarioJuridico")
-
-  .post(postJuridico);
+  .post(postJuridico)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
