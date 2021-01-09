@@ -126,6 +126,8 @@ const POSTLugar = async (request, response) => {
 
 const postUsuario = async (request, response) => {
   const { correo, contrasena, tipo } = request.body;
+  var datosUsuario = []
+  var rif
   if (tipo == "natural") {
     pool.query(
       'SELECT * FROM "NATURAL" WHERE correo_electronico = $1 AND contrasena = $2',
@@ -134,7 +136,31 @@ const postUsuario = async (request, response) => {
         if (error) {
           throw error;
         }
-        response.status(201).json(results.rows);
+        rif = results.rows[0]['rif']
+        datosUsuario.push(results.rows[0])
+        pool.query(
+          'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
+          [rif, '0414','0424','0426','0412','0416'],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            datosUsuario[0]['celular'] = results.rows[0]['numero_telefonico']
+            datosUsuario[0]['prefijo_celular'] = results.rows[0]['prefijo']
+            pool.query(
+              'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND prefijo = $2',
+              [rif, '0212'],
+              (error, results) => {
+                if (error) {
+                  throw error;
+                }
+                datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
+                datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
+                response.status(201).json(datosUsuario)
+              }
+            )
+          }
+        )
       }
     );
   } else if (tipo == "empleado") {
@@ -150,6 +176,18 @@ const postUsuario = async (request, response) => {
     );
   }
 };
+
+const registrarTelefono = async (celular, prefijo_celular, rif) =>{
+  pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
+  [celular, prefijo_celular, rif],
+  (error, results) => {
+    if (error){
+      throw error;
+    }
+    return results
+  }
+  )
+}
 
 const buscarLugar = async (request, response) => {
   const {lugar} = request.body
@@ -178,6 +216,8 @@ const postNatural = async (request, response) => {
     tipo_cedula,
     telefono,
     prefijo,
+    celular,
+    prefijo_celular,
     lugar
   } = request.body;
   pool.query(
@@ -204,7 +244,8 @@ const postNatural = async (request, response) => {
         if (error){
           throw error;
         }
-        response.status(201).json(results);
+        registrarTelefono(celular, prefijo_celular, rif)
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
       }
       )
     }
@@ -308,9 +349,20 @@ const postJuridico = async (request, response) => {
     pagina_web,
     capital_disponible,
     contrasena,
+    telefono,
+    prefijo_telefono,
+    celular,
+    prefijo_celular,
+    lugar,
+    persona_contacto_nombre,
+    persona_contacto_apellido,
+    persona_contacto_telefono,
+    persona_contacto_celular,
+    persona_contacto_prefijo_celular,
+    persona_contacto_prefijo_telefono
   } = request.body;
   pool.query(
-    'INSERT INTO "JURIDICO" (rif, correo, deonimacion_comercial, razon_social, pagina_web, capital_disponible, UCABMART, contrasena) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+    'INSERT INTO "JURIDICO" (rif, correo_electronico, denominacion_comercial, razon_social, pagina_web, capital_disponible, contrasena, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7, $8)',
     [
       rif,
       correo,
@@ -319,12 +371,23 @@ const postJuridico = async (request, response) => {
       pagina_web,
       capital_disponible,
       contrasena,
+      lugar
     ],
     (error, results) => {
       if (error) {
         throw error;
       }
-      response.status(201).json(results);
+      registrarTelefono(celular, prefijo_celular, rif)
+      registrarTelefono(telefono, prefijo_telefono, rif)
+      pool.query('INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, fk_juridico) VALUES ($1,$2,$3)',
+      [persona_contacto_nombre, persona_contacto_apellido, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        response.status(201).json(results.rows);
+      }
+      )
     }
   );
 };
