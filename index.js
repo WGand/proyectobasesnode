@@ -13,22 +13,15 @@ const postLugarParroquia = async (request, response) => {
   const {parroquia} = request.body
   pool.query('SELECT fk_lugar "LUGAR" WHERE lugar_id = $1',
   [parroquia],
-  (error, results) =>
+  (error, results) =>{
+    if (error){
+      throw error
+    }
+    response.status(201).json(results.rows)
+  }
   )
 }
-const buscarLugar = async (request, response) => {
-  const {lugar} = request.body
-  pool.query(
-    'SELECT lugar_id FROM "LUGAR" WHERE nombre=$1 and tipo =$2',
-    [lugar, 'PARROQUIA'],
-    (error, results) =>{
-      if (error){
-        throw error;
-      }
-      response.status(201).json(results.rows)
-    }
-  );
-};
+
 const postEspecificoLugar = async (request, response) => {
   const { tipo_lugar, lugar, estado } = request.body;
   switch (tipo_lugar) {
@@ -405,6 +398,10 @@ const getControl = async (request, response) => {
     }
   );
 };
+
+app
+  .route("/lugarparroquia")
+  .post(postLugarParroquia)
 
 app
   .route("/rif")
