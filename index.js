@@ -9,6 +9,26 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
+const postLugarParroquia = async (request, response) => {
+  const {parroquia} = request.body
+  pool.query('SELECT fk_lugar "LUGAR" WHERE lugar_id = $1',
+  [parroquia],
+  (error, results) =>
+  )
+}
+const buscarLugar = async (request, response) => {
+  const {lugar} = request.body
+  pool.query(
+    'SELECT lugar_id FROM "LUGAR" WHERE nombre=$1 and tipo =$2',
+    [lugar, 'PARROQUIA'],
+    (error, results) =>{
+      if (error){
+        throw error;
+      }
+      response.status(201).json(results.rows)
+    }
+  );
+};
 const postEspecificoLugar = async (request, response) => {
   const { tipo_lugar, lugar, estado } = request.body;
   switch (tipo_lugar) {
@@ -135,6 +155,7 @@ const postNatural = async (request, response) => {
     contrasena,
     tipo_cedula,
     telefono,
+    prefijo,
     lugar
   } = request.body;
   pool.query(
@@ -155,8 +176,8 @@ const postNatural = async (request, response) => {
       if (error) {
         throw error;
       }
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_natural) VALUES ($1, $2)',
-      [telefono, rif],
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
+      [telefono, prefijo, rif],
       (error, results) => {
         if (error){
           throw error;
@@ -297,6 +318,7 @@ const postEmpleado = async (request, response) => {
     segundo_apellido,
     contrasena,
     telefono,
+    prefijo,
     lugar,
     hora_inicio,
     hora_fin,
@@ -319,8 +341,8 @@ const postEmpleado = async (request, response) => {
       if (error) {
         throw error;
       }
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_empleado) VALUES ($1, $2)',
-      [telefono, rif],
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_empleado, prefijo) VALUES ($1, $2, $3)',
+      [telefono, prefijo, rif],
       (error, results) => {
         if (error){
           throw error;
