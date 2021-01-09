@@ -11,7 +11,7 @@ app.use(cors());
 
 const postLugarParroquia = async (request, response) => {
   const {parroquia} = request.body
-  pool.query('SELECT fk_lugar "LUGAR" WHERE lugar_id = $1',
+  pool.query('SELECT fk_lugar FROM "LUGAR" WHERE lugar_id = $1',
   [parroquia],
   (error, results) =>{
     if (error){
