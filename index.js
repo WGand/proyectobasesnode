@@ -11,13 +11,42 @@ app.use(cors());
 
 const postLugarParroquia = async (request, response) => {
   const {parroquia} = request.body
-  pool.query('SELECT fk_lugar FROM "LUGAR" WHERE lugar_id = $1',
+  var ubicacion = []
+  pool.query('SELECT * FROM "LUGAR" WHERE lugar_id = $1',
   [parroquia],
   (error, results) =>{
     if (error){
       throw error
     }
-    response.status(201).json(results.rows)
+    ubicacion.push({
+      key:'parroquia',
+      value: results.rows[0]['nombre']
+    })
+    pool.query('SELECT * FROM "LUGAR" WHERE lugar_id = $1',
+    [results.rows[0]['fk_lugar']],
+    (error, results) =>{
+      if (error){
+        throw error
+      }
+      ubicacion.push({
+        key: 'municipio',
+        value: results.rows[0]['nombre']
+      })
+      pool.query('SELECT * FROM "LUGAR" WHERE lugar_id = $1',
+      [results.rows[0]['fk_lugar']],
+      (error, results) =>{
+        if (error){
+          throw error
+        }
+        ubicacion.push({
+          key: 'estado',
+          value: results.rows[0]['nombre']
+        })
+        response.status(200).json(ubicacion);
+      }
+      )
+    }
+    )
   }
   )
 }
