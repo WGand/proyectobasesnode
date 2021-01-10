@@ -177,6 +177,56 @@ const postUsuario = async (request, response) => {
   }
 };
 
+const actualizarTelefono = async (celular, prefijo_celular, rif, tipo) =>{
+  switch(tipo){
+    case 'natural':
+      pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_natural=$3',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'juridico':
+      pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_juridico = $3',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'empleado':
+      pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_empleado = $3',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'persona_contacto':
+      pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_persona_contacto=$3',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+  }
+
+}
+
 const registrarTelefono = async (celular, prefijo_celular, rif, tipo) =>{
   switch(tipo){
     case 'natural':
@@ -286,6 +336,208 @@ const postNatural = async (request, response) => {
         response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
       }
       )
+    }
+  );
+};
+
+const updateNatural = async (request, response) => {
+  const {
+    rif,
+    correo,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
+    contrasena,
+    telefono,
+    prefijo,
+    celular,
+    prefijo_celular,
+    lugar
+  } = request.body;
+  var usuario
+  pool.query(
+    'SELECT * FROM "NATURAL" WHERE correo_electronico=$1',
+    [
+      correo
+    ],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      usuarioCantidad = results.rowCount
+      usuario = results.rows[0]
+      if(usuarioCantidad == 0){
+        pool.query(
+          'UPDATE "NATURAL" SET  correo_electronico=$2, primer_nombre=$3, segundo_nombre =$4, primer_apellido=$5, segundo_apellido=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
+          [
+            rif,
+            correo,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
+            contrasena,
+            lugar
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            actualizarTelefono(celular, prefijo_celular, rif, 'natural')
+            actualizarTelefono(telefono, prefijo, rif, 'natural')
+            response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
+          }
+        );
+      }
+      else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
+        response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+      }
+      else if(usuarioCantidad > 0 && usuario['rif'] == rif){
+        pool.query(
+          'UPDATE "NATURAL" SET primer_nombre=$2, segundo_nombre =$3, primer_apellido=$4, segundo_apellido=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
+          [
+            rif,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
+            contrasena,
+            lugar
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            actualizarTelefono(celular, prefijo_celular, rif, 'natural')
+            actualizarTelefono(telefono, prefijo, rif, 'natural')
+            response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
+          }
+        );
+      }
+    }
+  );
+};
+
+const updateJuridico = async (request, response) => {
+  var persona_contacto_id
+  const {
+    rif,
+    correo,
+    denominacion_comercial,
+    razon_social,
+    pagina_web,
+    capital_disponible,
+    contrasena,
+    telefono,
+    prefijo_telefono,
+    celular,
+    prefijo_celular,
+    lugar,
+    persona_contacto_nombre,
+    persona_contacto_apellido,
+    persona_contacto_telefono,
+    persona_contacto_celular,
+    persona_contacto_prefijo_celular,
+    persona_contacto_prefijo_telefono
+  } = request.body;
+  pool.query(
+    'SELECT * FROM "JURIDICO" WHERE correo_electronico =$1',
+    [
+      correo
+    ],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      usuarioCantidad = results.rowCount
+      usuario = results.rows[0]
+      if(usuarioCantidad == 0){
+        pool.query(
+          'UPDATE "JURIDICO" SET correo_electronico =$2, denominacion_comercial=$3, razon_social=$4, pagina_web=$5, capital_disponible=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
+          [
+            rif,
+            correo,
+            denominacion_comercial,
+            razon_social,
+            pagina_web,
+            capital_disponible,
+            contrasena,
+            lugar
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            registrarTelefono(celular, prefijo_celular, rif, 'juridico')
+            registrarTelefono(telefono, prefijo_telefono, rif, 'juridico')
+            pool.query('INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, fk_juridico) VALUES ($1,$2,$3)',
+            [persona_contacto_nombre, persona_contacto_apellido, rif],
+            (error, results) => {
+              if (error){
+                throw error;
+              }
+              pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
+              [rif],
+              (error, results) => {
+                if (error){
+                  throw error;
+                }
+                persona_contacto_id = results.rows[0]['persona_id']
+                registrarTelefono(persona_contacto_celular, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
+                registrarTelefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_id, 'persona_contacto')
+                response.status(201).json({ status: "success", message: "Funciono" })
+              }
+              )
+            }
+            )
+          }
+        );
+      }
+      else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
+      response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+      }
+      else if(usuarioCantidad > 0 && usuario['rif'] == rif){
+          pool.query(
+            'UPDATE "JURIDICO" SET denominacion_comercial=$2, razon_social=$3, pagina_web=$4, capital_disponible=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
+            [
+              rif,
+              denominacion_comercial,
+              razon_social,
+              pagina_web,
+              capital_disponible,
+              contrasena,
+              lugar
+            ],
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              registrarTelefono(celular, prefijo_celular, rif, 'juridico')
+              registrarTelefono(telefono, prefijo_telefono, rif, 'juridico')
+              pool.query('INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, fk_juridico) VALUES ($1,$2,$3)',
+              [persona_contacto_nombre, persona_contacto_apellido, rif],
+              (error, results) => {
+                if (error){
+                  throw error;
+                }
+                pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
+                [rif],
+                (error, results) => {
+                  if (error){
+                    throw error;
+                  }
+                  persona_contacto_id = results.rows[0]['persona_id']
+                  registrarTelefono(persona_contacto_celular, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
+                  registrarTelefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_id, 'persona_contacto')
+                  response.status(201).json({ status: "success", message: "Funciono" })
+                  }
+                )
+              }
+            )
+          }
+        )
+      }
     }
   );
 };
@@ -580,9 +832,11 @@ app
 app
   .route("/usuarioNatural")
   .post(postNatural)
+  .put(updateNatural)
 app
   .route("/usuarioJuridico")
   .post(postJuridico)
+  .put(updateJuridico)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
