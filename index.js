@@ -1105,6 +1105,9 @@ const getTodos = async (request, response) => {
       if (error) {
         throw error;
       }
+      for(i=0; i < results.rowCount; i++){
+        results.rows[i]['id'] = results.rows[i]['rif']
+      }
       todo['JURIDICO'] = results.rows
       pool.query(
         'SELECT * FROM "NATURAL"',
@@ -1112,12 +1115,18 @@ const getTodos = async (request, response) => {
           if (error) {
             throw error;
           }
+          for(i=0; i < results.rowCount; i++){
+            results.rows[i]['id'] = results.rows[i]['rif']
+          }
           todo['NATURAL'] = results.rows
           pool.query(
             'SELECT * FROM "EMPLEADO"',
             (error, results) => {
               if (error) {
                 throw error;
+              }
+              for(i=0; i < results.rowCount; i++){
+                results.rows[i]['id'] = results.rows[i]['rif']
               }
               todo['EMPLEADO'] = results.rows
               response.status(201).json(todo)
