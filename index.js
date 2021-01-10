@@ -92,7 +92,7 @@ const postEspecificoLugar = async (request, response) => {
       break;
     default:
       response
-        .status(404)
+        .status(201)
         .json({ status: "failure", message: "NO HAY UN LUGAR ASIGNADO" });
   }
 };
@@ -164,7 +164,7 @@ const postUsuario = async (request, response) => {
           )
         }
         else if(results.rowCount == 0){
-          response.status(404).json([])
+          response.status(201).json([])
         }
       }
     );
@@ -204,7 +204,7 @@ const postUsuario = async (request, response) => {
           )
         }
         else if(results.rowCount == 0){
-          response.status(404).json([])
+          response.status(201).json([])
         }
       }
     );
@@ -282,7 +282,7 @@ const postUsuario = async (request, response) => {
           )
         }
         else if(results.rowCount == 0){
-          response.status(404).json([])
+          response.status(201).json([])
         }
       }
     );
@@ -503,7 +503,7 @@ const updateNatural = async (request, response) => {
         );
       }
       else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-        response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+        response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
       }
       else if(usuarioCantidad > 0 && usuario['rif'] == rif){
         pool.query(
@@ -607,7 +607,7 @@ const updateJuridico = async (request, response) => {
         );
       }
       else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-      response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+      response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
       }
       else if(usuarioCantidad > 0 && usuario['rif'] == rif){
           pool.query(
@@ -694,7 +694,7 @@ const postValidarRif = async(request, response) =>{
       )
       break;
     default:
-      response.status(404).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
+      response.status(201).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
   }
 }
 
@@ -738,7 +738,7 @@ const postValidarCorreo = async(request, response) =>{
       )
       break;
     default:
-      response.status(404).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
+      response.status(201).json({ status: "Fallo", message: "Falta el tipo de usuario" });  
   }
 }
 
@@ -934,7 +934,7 @@ const updateEmpleado = async (request, response) => {
         );
       }
       else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-        response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+        response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
       }
       else if(usuarioCantidad > 0 && usuario['rif'] == rif){
         pool.query(
@@ -1047,6 +1047,19 @@ const getTodos = async (request, response) => {
   );
 }
 
+const deleteNatural = async (request, response) => {
+  const { rif } = request.body;
+  pool.query(
+    'SELECT * FROM "NATURAL" WHERE rif = $1',
+    [rif],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).json(results.rowCount);
+    }
+  );
+};
 
 app
   .route("/lugarparroquia")
