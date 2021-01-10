@@ -1015,6 +1015,38 @@ const getControl = async (request, response) => {
   );
 };
 
+const getTodos = async (request, response) => {
+  var todo = {}
+  pool.query(
+    'SELECT * FROM "JURIDICO"',
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      todo['JURIDICO'] = results.rows
+      pool.query(
+        'SELECT * FROM "NATURAL"',
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+          todo['NATURAL'] = results.rows
+          pool.query(
+            'SELECT * FROM "EMPLEADO"',
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              todo['EMPLEADO'] = results.rows
+              response.status(201).json(todo)
+            }
+          );
+        }
+      );
+    }
+  );
+}
+
 
 app
   .route("/lugarparroquia")
@@ -1053,6 +1085,7 @@ app
 app
   .route("/login")
   .post(postUsuario)
+  .get(getTodos)
 app
   .route("/usuarioNatural")
   .post(postNatural)
