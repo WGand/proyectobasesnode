@@ -136,31 +136,36 @@ const postUsuario = async (request, response) => {
         if (error) {
           throw error;
         }
-        rif = results.rows[0]['rif']
-        datosUsuario.push(results.rows[0])
-        pool.query(
-          'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
-          [rif, '0414','0424','0426','0412','0416'],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            datosUsuario[0]['celular'] = results.rows[0]['numero_telefonico']
-            datosUsuario[0]['prefijo_celular'] = results.rows[0]['prefijo']
-            pool.query(
-              'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND prefijo = $2',
-              [rif, '0212'],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
-                datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
-                response.status(201).json(datosUsuario)
+        if(results.rowCount == 1){
+          rif = results.rows[0]['rif']
+          datosUsuario.push(results.rows[0])
+          pool.query(
+            'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
+            [rif, '0414','0424','0426','0412','0416'],
+            (error, results) => {
+              if (error) {
+                throw error;
               }
-            )
-          }
-        )
+              datosUsuario[0]['celular'] = results.rows[0]['numero_telefonico']
+              datosUsuario[0]['prefijo_celular'] = results.rows[0]['prefijo']
+              pool.query(
+                'SELECT * FROM "TELEFONO" WHERE fk_natural = $1 AND prefijo = $2',
+                [rif, '0212'],
+                (error, results) => {
+                  if (error) {
+                    throw error;
+                  }
+                  datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
+                  datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
+                  response.status(201).json(datosUsuario)
+                }
+              )
+            }
+          )
+        }
+        else if(results.rowCount == 0){
+          response.status(404).json([])
+        }
       }
     );
   } else if (tipo == "empleado") {
@@ -171,7 +176,114 @@ const postUsuario = async (request, response) => {
         if (error) {
           throw error;
         }
-        response.status(201).json(results.rows);
+        if(results.rowCount == 1){
+          rif = results.rows[0]['rif']
+          datosUsuario.push(results.rows[0])
+          pool.query(
+            'SELECT * FROM "TELEFONO" WHERE fk_empleado = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
+            [rif, '0414','0424','0426','0412','0416'],
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              datosUsuario[0]['celular'] = results.rows[0]['numero_telefonico']
+              datosUsuario[0]['prefijo_celular'] = results.rows[0]['prefijo']
+              pool.query(
+                'SELECT * FROM "TELEFONO" WHERE fk_empleado = $1 AND prefijo = $2',
+                [rif, '0212'],
+                (error, results) => {
+                  if (error) {
+                    throw error;
+                  }
+                  datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
+                  datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
+                  response.status(201).json(datosUsuario)
+                }
+              )
+            }
+          )
+        }
+        else if(results.rowCount == 0){
+          response.status(404).json([])
+        }
+      }
+    );
+  }
+  else if (tipo == 'juridico'){
+    pool.query(
+      'SELECT * FROM "JURIDICO" WHERE correo_electronico = $1 AND contrasena = $2',
+      [correo, contrasena],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        if(results.rowCount == 1){
+          rif = results.rows[0]['rif']
+          datosUsuario.push(results.rows[0])
+          pool.query(
+            'SELECT * FROM "TELEFONO" WHERE fk_juridico = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
+            [rif, '0414','0424','0426','0412','0416'],
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              datosUsuario[0]['celular'] = results.rows[0]['numero_telefonico']
+              datosUsuario[0]['prefijo_celular'] = results.rows[0]['prefijo']
+              pool.query(
+                'SELECT * FROM "TELEFONO" WHERE fk_juridico = $1 AND prefijo = $2',
+                [rif, '0212'],
+                (error, results) => {
+                  if (error) {
+                    throw error;
+                  }
+                  datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
+                  datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
+                  //response.status(201).json(datosUsuario)
+                  pool.query(
+                    'SELECT * FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
+                    [rif],
+                    (error, results) => {
+                      if (error) {
+                        throw error;
+                      }
+                      usuarioID = results.rows[0]['persona_id']
+                      datosUsuario[0]['persona_contacto_nombre'] = results.rows[0]['nombre']
+                      datosUsuario[0]['persona_contacto_primer_apellido'] = results.rows[0]['primer_apellido']
+                      datosUsuario[0]['persona_contacto_segundo_apellido'] = results.rows[0]['segundo_apellido']
+                      datosUsuario[0]['persona_contacto_nombre'] = results.rows[0]['nombre']
+                      pool.query(
+                        'SELECT * FROM "TELEFONO" WHERE fk_persona_contacto = $1 AND (prefijo = $2 OR prefijo = $3 OR prefijo = $4 OR prefijo = $5 OR prefijo = $6)',
+                        [usuarioID, '0414','0424','0426','0412','0416'],
+                        (error, results) => {
+                          if (error) {
+                            throw error;
+                          }
+                        }
+                      )
+                      datosUsuario[0]['persona_contacto_celular']=results.rows[0]['numero_telefonico']
+                      datosUsuario[0]['persona_contacto_prefijo_celular']=results.rows[0]['prefijo']
+                      pool.query(
+                        'SELECT * FROM "TELEFONO" WHERE fk_persona_contacto = $1 AND prefijo =$2',
+                        [usuarioID, '0212'],
+                        (error, results) => {
+                          if (error) {
+                            throw error;
+                          }
+                          datosUsuario[0]['persona_contacto_telefono']=results.rows[0]['numero_telefonico']
+                          datosUsuario[0]['persona_contacto_prefijo_telefono']=results.rows[0]['prefijo']
+                          response.status(201).json(datosUsuario)
+                        }
+                      )
+                    }
+                  )
+                }
+              )
+            }
+          )
+        }
+        else if(results.rowCount == 0){
+          response.status(404).json([])
+        }
       }
     );
   }
@@ -706,6 +818,8 @@ const postEmpleado = async (request, response) => {
     contrasena,
     telefono,
     prefijo,
+    celular,
+    prefijo_celular,
     lugar,
     hora_inicio,
     hora_fin,
@@ -728,13 +842,9 @@ const postEmpleado = async (request, response) => {
       if (error) {
         throw error;
       }
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, fk_empleado, prefijo) VALUES ($1, $2, $3)',
-      [telefono, prefijo, rif],
-      (error, results) => {
-        if (error){
-          throw error;
-        }
-        pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
+      registrarTelefono(telefono, prefijo, 'empleado')
+      registrarTelefono(celular, prefijo_celular, 'empleado')
+      pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
         [hora_inicio, hora_fin, dia],
         (error, results) => {
           if (error){
@@ -746,16 +856,128 @@ const postEmpleado = async (request, response) => {
             if (error){
               throw error;
             }
-            response.status(201).json({ status: "success", message: "Funciono" });    
+            response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });    
           }
           )
         }
-        )
-      }
       )
     }
   );
 };
+
+const updateEmpleado = async (request, response) => {
+  const {
+    rif,
+    correo,
+    cedula,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
+    contrasena,
+    telefono,
+    prefijo,
+    celular,
+    prefijo_celular,
+    lugar,
+    hora_inicio,
+    hora_fin,
+    dia
+  } = request.body;
+  pool.query(
+    'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $1',
+    [correo],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(200).json(results.rowCount);
+      usuarioCantidad = results.rowCount
+      usuario = results.rows[0]
+      if(usuarioCantidad == 0){
+        pool.query(
+          'UPDATE "EMPLEADO" SET correo_electronico=$2, primer_nombre = $3, segundo_nombre=$4, primer_apellido=$5, segundo_apellido=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
+          [
+            rif,
+            correo,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
+            contrasena,
+            lugar
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            registrarTelefono(telefono, prefijo, 'empleado')
+            registrarTelefono(celular, prefijo_celular, 'empleado')
+            pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
+              [hora_inicio, hora_fin, dia],
+              (error, results) => {
+                if (error){
+                  throw error;
+                }
+                pool.query('INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
+                [rif, results.rows[0]['horario_id']],
+                (error, results) => {
+                  if (error){
+                    throw error;
+                  }
+                  response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });    
+                }
+                )
+              }
+            )
+          }
+        );
+      }
+      else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
+        response.status(404).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
+      }
+      else if(usuarioCantidad > 0 && usuario['rif'] == rif){
+        pool.query(
+          'UPDATE "EMPLEADO" SET primer_nombre = $2, segundo_nombre=$3, primer_apellido=$4, segundo_apellido=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
+          [
+            rif,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
+            contrasena,
+            lugar
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            registrarTelefono(telefono, prefijo, 'empleado')
+            registrarTelefono(celular, prefijo_celular, 'empleado')
+            pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
+              [hora_inicio, hora_fin, dia],
+              (error, results) => {
+                if (error){
+                  throw error;
+                }
+                pool.query('INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
+                [rif, results.rows[0]['horario_id']],
+                (error, results) => {
+                  if (error){
+                    throw error;
+                  }
+                  response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });    
+                }
+                )
+              }
+            )
+          }
+        );
+      }
+    }
+  )
+};
+
 
 const postHorario = async (request, response) => {
   const {
@@ -793,6 +1015,7 @@ const getControl = async (request, response) => {
   );
 };
 
+
 app
   .route("/lugarparroquia")
   .post(postLugarParroquia)
@@ -812,6 +1035,7 @@ app
 app
   .route("/empleado")
   .post(postEmpleado)
+  .put(updateEmpleado)
 
 app
   .route("/buscarLugar")
