@@ -325,7 +325,7 @@ const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, r
               throw error;
             }
             pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_natural=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
+            [telefono, prefijo, data[1]['prefijo_telefono'], rif],
             (error, results) => {
               if (error){
                 throw error;
@@ -354,7 +354,7 @@ const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, r
               throw error;
             }
             pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_juridico=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
+            [telefono, prefijo, data[1]['prefijo_telefono'], rif],
             (error, results) => {
               if (error){
                 throw error;
@@ -383,7 +383,7 @@ const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, r
               throw error;
             }
             pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_empleado=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
+            [telefono, prefijo, data[1]['prefijo_telefono'], rif],
             (error, results) => {
               if (error){
                 throw error;
@@ -412,7 +412,7 @@ const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, r
               throw error;
             }
             pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_persona_contacto=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
+            [telefono, prefijo, data[1]['prefijo_telefono'], rif],
             (error, results) => {
               if (error){
                 throw error;
@@ -949,6 +949,16 @@ const postEmpleado = async (request, response) => {
   );
 };
 
+//pool.query('UPDATE "EMPLEADO_HORARIO" SET fk_empleado=$1, fk_horario=$2',
+//[rif, results.rows[0]['horario_id']],
+//(error, results) => {
+//  if (error){
+//    throw error;
+//  }
+//  response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });
+//}
+//)
+
 const updateEmpleado = async (request, response) => {
   const {
     rif,
@@ -1002,15 +1012,14 @@ const updateEmpleado = async (request, response) => {
                 if (error){
                   throw error;
                 }
-                pool.query('UPDATE "EMPLEADO_HORARIO" SET fk_empleado=$1, fk_horario=$2',
-                [rif, results.rows[0]['horario_id']],
+                pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
+                [hora_inicio, hora_fin, dia],
                 (error, results) => {
                   if (error){
                     throw error;
                   }
-                  response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });    
                 }
-                )
+              )
               }
             )
           }
