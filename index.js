@@ -177,16 +177,54 @@ const postUsuario = async (request, response) => {
   }
 };
 
-const registrarTelefono = async (celular, prefijo_celular, rif) =>{
-  pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
-  [celular, prefijo_celular, rif],
-  (error, results) => {
-    if (error){
-      throw error;
-    }
-    return results
+const registrarTelefono = async (celular, prefijo_celular, rif, tipo) =>{
+  switch(tipo){
+    case 'natural':
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'juridico':
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_juridico) VALUES ($1, $2, $3)',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'empleado':
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_empleado) VALUES ($1, $2, $3)',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
+    case 'persona_contacto':
+      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_persona_contacto) VALUES ($1, $2, $3)',
+      [celular, prefijo_celular, rif],
+      (error, results) => {
+        if (error){
+          throw error;
+        }
+        return results
+      }
+      )
+      break
   }
-  )
+
 }
 
 const buscarLugar = async (request, response) => {
@@ -244,7 +282,7 @@ const postNatural = async (request, response) => {
         if (error){
           throw error;
         }
-        registrarTelefono(celular, prefijo_celular, rif)
+        registrarTelefono(celular, prefijo_celular, rif, 'natural')
         response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
       }
       )
@@ -341,6 +379,7 @@ const postValidarCorreo = async(request, response) =>{
 }
 
 const postJuridico = async (request, response) => {
+  var persona_contacto_id
   const {
     rif,
     correo,
@@ -377,15 +416,26 @@ const postJuridico = async (request, response) => {
       if (error) {
         throw error;
       }
-      registrarTelefono(celular, prefijo_celular, rif)
-      registrarTelefono(telefono, prefijo_telefono, rif)
+      registrarTelefono(celular, prefijo_celular, rif, 'juridico')
+      registrarTelefono(telefono, prefijo_telefono, rif, 'juridico')
       pool.query('INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, fk_juridico) VALUES ($1,$2,$3)',
       [persona_contacto_nombre, persona_contacto_apellido, rif],
       (error, results) => {
         if (error){
           throw error;
         }
-        response.status(201).json(results.rows);
+        pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
+        [rif],
+        (error, results) => {
+          if (error){
+            throw error;
+          }
+          persona_contacto_id = results.rows[0]['persona_id']
+          registrarTelefono(persona_contacto_celular, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
+          registrarTelefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_id, 'persona_contacto')
+          response.status(201).json({ status: "success", message: "Funciono" })
+        }
+        )
       }
       )
     }
