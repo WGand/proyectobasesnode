@@ -404,7 +404,7 @@ const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, r
             throw error;
           }
           telefonos = results.rows
-          console.log(data)
+          data = ordenarTelefonos(telefonos)
           pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_persona_contacto=$4 AND prefijo=$3',
           [celular, prefijo_celular, data[0]['prefijo_celular'], rif],
           (error, results) => {
@@ -713,7 +713,7 @@ const updateJuridico = async (request, response) => {
               }
               actualizarTelefono(celular,telefono, prefijo_telefono, prefijo_celular, rif, 'juridico')
               pool.query('UPDATE "PERSONA_CONTACTO" SET nombre=$1, primer_apellido=$2, segundo_apellido=$3 WHERE fk_juridico=$4',
-              [persona_contacto_nombre, persona_contacto_apellido, rif],
+              [persona_contacto_nombre, persona_contacto_apellido, persona_contacto_segundo_apellido, rif],
               (error, results) => {
                 if (error){
                   throw error;
@@ -724,6 +724,7 @@ const updateJuridico = async (request, response) => {
                   if (error){
                     throw error;
                   }
+                  
                   persona_contacto_id = results.rows[0]['persona_id']
                   actualizarTelefono(persona_contacto_celular, persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
                   response.status(201).json({ status: "success", message: "Funciono" })
@@ -1392,7 +1393,7 @@ const deleteTienda = async (request, response) =>{
               }
               pasillo_id = results.rows[0]['fk_pasillo']
               pool.query(
-                'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen = $1 and fk_zona',
+                'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen = $1 AND fk_zona=$2',
                 [
                   tienda_id,
                   zona_id
@@ -1402,7 +1403,7 @@ const deleteTienda = async (request, response) =>{
                     throw error;
                   }
                   pool.query(
-                    'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo = $1 and fk_zona',
+                    'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo = $1 and fk_zona=$2',
                     [
                       pasillo_id,
                       zona_id
@@ -1412,7 +1413,7 @@ const deleteTienda = async (request, response) =>{
                         throw error;
                       }
                       pool.query(
-                        'DELETE FROM "PASILLO" WHERE fk_pasillo = $1',
+                        'DELETE FROM "PASILLO" WHERE pasillo_id = $1',
                         [
                           pasillo_id
                         ],
@@ -1421,7 +1422,7 @@ const deleteTienda = async (request, response) =>{
                             throw error;
                           }
                           pool.query(
-                            'DELETE FROM "ZONA" WHERE fk_zona = $1',
+                            'DELETE FROM "ZONA" WHERE zona_id = $1',
                             [
                               zona_id
                             ],
@@ -1430,7 +1431,7 @@ const deleteTienda = async (request, response) =>{
                                 throw error;
                               }
                               pool.query(
-                                'DELETE FROM "ALMACEN" WHERE almacen_id = $1',
+                                'DELETE FROM "ALMACEN" WHERE fk_tienda = $1',
                                 [
                                   tienda_id
                                 ],
@@ -1438,7 +1439,19 @@ const deleteTienda = async (request, response) =>{
                                   if (error) {
                                     throw error;
                                   }
-                                  pasillo_id = results.rows[0]['fk_pasillo']
+                                  pool.query(
+                                    'DELETE FROM "TIENDA" WHERE tienda_id = $1',
+                                    [
+                                      tienda_id
+                                    ],
+                                    (error, results) => {
+                                      if (error) {
+                                        throw error;
+                                      }
+                                      response.status(201).json({message:'todo bien'})
+                                      
+                                    }
+                                  )
                                   
                                 }
                               )
