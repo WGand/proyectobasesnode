@@ -51,6 +51,19 @@ const postLugarParroquia = async (request, response) => {
   )
 }
 
+const existeLugar = async (numero) => {
+  pool.query(
+    'SELECT * FROM "LUGAR" WHERE lugar_id = $1',
+    [numero],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      return results.rowCount
+    }
+  );
+}
+
 const postEspecificoLugar = async (request, response) => {
   const { tipo_lugar, lugar, estado } = request.body;
   switch (tipo_lugar) {
@@ -1152,7 +1165,6 @@ const updateEmpleado = async (request, response) => {
   )
 }
 
-
 const postHorario = async (request, response) => {
   const {
     hora_inicio,
@@ -1421,72 +1433,87 @@ const postTienda = async (request, response) =>{
     fk_lugar
   } = request.body
   var tienda_id, zona_id, pasillo_id
-  pool.query(
-    'INSERT INTO "TIENDA" (nombre, fk_lugar) VALUES ($1, $2) RETURNING tienda_id',
-    [
-      nombre,
-      fk_lugar
-    ],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      tienda_id = results.rows[0]['tienda_id']
-      pool.query(
-        'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda) VALUES ($1, $2, $3)',
-        [
-          'o',
-          100,
-          tienda_id
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
+  if(nombre != '' && fk_lugar != ''){
+    pool.query(
+      'SELECT * FROM "TIENDA" WHERE nombre = $1',
+      [
+        nombre
+      ],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        if(results.rowCount == 0){
           pool.query(
-            'INSERT INTO "ZONA" (nombre) VALUES ($1) RETURNING zona_id ',
+            'INSERT INTO "TIENDA" (nombre, fk_lugar) VALUES ($1, $2) RETURNING tienda_id',
             [
-              'D'
+              nombre,
+              fk_lugar
             ],
             (error, results) => {
               if (error) {
                 throw error;
               }
-              zona_id = results.rows[0]['zona_id']
+              tienda_id = results.rows[0]['tienda_id']
               pool.query(
-                'INSERT INTO "ALMACEN_ZONA" (tipo, fk_zona, fk_almacen) VALUES ($1, $2, $3)',
+                'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda) VALUES ($1, $2, $3)',
                 [
-                  'REFRIGERADOS',
-                  zona_id,
+                  'o',
+                  100,
                   tienda_id
-
                 ],
                 (error, results) => {
                   if (error) {
                     throw error;
                   }
                   pool.query(
-                    'INSERT INTO "PASILLO" (nombre) VALUES ($1) RETURNING pasillo_id',
+                    'INSERT INTO "ZONA" (nombre) VALUES ($1) RETURNING zona_id ',
                     [
-                      'F'
+                      'D'
                     ],
                     (error, results) => {
                       if (error) {
                         throw error;
                       }
-                      pasillo_id = results.rows[0]['pasillo_id']
+                      zona_id = results.rows[0]['zona_id']
                       pool.query(
-                        'INSERT INTO "ZONA_PASILLO" (cantidad, fk_zona, fk_pasillo) VALUES ($1, $2, $3)',
+                        'INSERT INTO "ALMACEN_ZONA" (tipo, fk_zona, fk_almacen) VALUES ($1, $2, $3)',
                         [
-                          100,
+                          'REFRIGERADOS',
                           zona_id,
-                          pasillo_id
+                          tienda_id
+        
                         ],
                         (error, results) => {
                           if (error) {
                             throw error;
                           }
-                          response.status(201).json({message: "funciono"})
+                          pool.query(
+                            'INSERT INTO "PASILLO" (nombre) VALUES ($1) RETURNING pasillo_id',
+                            [
+                              'F'
+                            ],
+                            (error, results) => {
+                              if (error) {
+                                throw error;
+                              }
+                              pasillo_id = results.rows[0]['pasillo_id']
+                              pool.query(
+                                'INSERT INTO "ZONA_PASILLO" (cantidad, fk_zona, fk_pasillo) VALUES ($1, $2, $3)',
+                                [
+                                  100,
+                                  zona_id,
+                                  pasillo_id
+                                ],
+                                (error, results) => {
+                                  if (error) {
+                                    throw error;
+                                  }
+                                  response.status(201).json({message: "funciono"})
+                                }
+                              )
+                            }
+                          )
                         }
                       )
                     }
@@ -1496,9 +1523,15 @@ const postTienda = async (request, response) =>{
             }
           )
         }
-      )
-    }
-  )
+        else{
+          response.status(201).json([])
+        }
+      }
+    )
+  }
+  else{
+    response.status(201).json([])
+  }
 }
 
 const deleteTienda = async (request, response) =>{
@@ -1515,101 +1548,106 @@ const deleteTienda = async (request, response) =>{
       if (error) {
         throw error;
       }
-      tienda_id = results.rows[0]['tienda_id']
+      if(results.rowCount == 1){
+        tienda_id = results.rows[0]['tienda_id']
 
-      pool.query(
-        'SELECT * FROM "ALMACEN_ZONA" WHERE fk_almacen = $1',
-        [
-          tienda_id
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          zona_id = results.rows[0]['fk_zona']
-          pool.query(
-            'SELECT * FROM "ZONA_PASILLO" WHERE fk_zona = $1',
-            [
-              zona_id
-            ],
-            (error, results) => {
-              if (error) {
-                throw error;
-              }
-              pasillo_id = results.rows[0]['fk_pasillo']
-              pool.query(
-                'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen = $1 AND fk_zona=$2',
-                [
-                  tienda_id,
-                  zona_id
-                ],
-                (error, results) => {
-                  if (error) {
-                    throw error;
-                  }
-                  pool.query(
-                    'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo = $1 and fk_zona=$2',
-                    [
-                      pasillo_id,
-                      zona_id
-                    ],
-                    (error, results) => {
-                      if (error) {
-                        throw error;
-                      }
-                      pool.query(
-                        'DELETE FROM "PASILLO" WHERE pasillo_id = $1',
-                        [
-                          pasillo_id
-                        ],
-                        (error, results) => {
-                          if (error) {
-                            throw error;
-                          }
-                          pool.query(
-                            'DELETE FROM "ZONA" WHERE zona_id = $1',
-                            [
-                              zona_id
-                            ],
-                            (error, results) => {
-                              if (error) {
-                                throw error;
-                              }
-                              pool.query(
-                                'DELETE FROM "ALMACEN" WHERE fk_tienda = $1',
-                                [
-                                  tienda_id
-                                ],
-                                (error, results) => {
-                                  if (error) {
-                                    throw error;
-                                  }
-                                  pool.query(
-                                    'DELETE FROM "TIENDA" WHERE tienda_id = $1',
-                                    [
-                                      tienda_id
-                                    ],
-                                    (error, results) => {
-                                      if (error) {
-                                        throw error;
-                                      }
-                                      response.status(201).json({message:'todo bien'})
-                                    }
-                                  )
-                                }
-                              )
-                            }
-                          )
-                        }
-                      )
-                    }
-                  )  
-                }
-              )
+        pool.query(
+          'SELECT * FROM "ALMACEN_ZONA" WHERE fk_almacen = $1',
+          [
+            tienda_id
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
             }
-          )
-        }
-      )
+            zona_id = results.rows[0]['fk_zona']
+            pool.query(
+              'SELECT * FROM "ZONA_PASILLO" WHERE fk_zona = $1',
+              [
+                zona_id
+              ],
+              (error, results) => {
+                if (error) {
+                  throw error;
+                }
+                pasillo_id = results.rows[0]['fk_pasillo']
+                pool.query(
+                  'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen = $1 AND fk_zona=$2',
+                  [
+                    tienda_id,
+                    zona_id
+                  ],
+                  (error, results) => {
+                    if (error) {
+                      throw error;
+                    }
+                    pool.query(
+                      'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo = $1 and fk_zona=$2',
+                      [
+                        pasillo_id,
+                        zona_id
+                      ],
+                      (error, results) => {
+                        if (error) {
+                          throw error;
+                        }
+                        pool.query(
+                          'DELETE FROM "PASILLO" WHERE pasillo_id = $1',
+                          [
+                            pasillo_id
+                          ],
+                          (error, results) => {
+                            if (error) {
+                              throw error;
+                            }
+                            pool.query(
+                              'DELETE FROM "ZONA" WHERE zona_id = $1',
+                              [
+                                zona_id
+                              ],
+                              (error, results) => {
+                                if (error) {
+                                  throw error;
+                                }
+                                pool.query(
+                                  'DELETE FROM "ALMACEN" WHERE fk_tienda = $1',
+                                  [
+                                    tienda_id
+                                  ],
+                                  (error, results) => {
+                                    if (error) {
+                                      throw error;
+                                    }
+                                    pool.query(
+                                      'DELETE FROM "TIENDA" WHERE tienda_id = $1',
+                                      [
+                                        tienda_id
+                                      ],
+                                      (error, results) => {
+                                        if (error) {
+                                          throw error;
+                                        }
+                                        response.status(201).json({message:'todo bien'})
+                                      }
+                                    )
+                                  }
+                                )
+                              }
+                            )
+                          }
+                        )
+                      }
+                    )  
+                  }
+                )
+              }
+            )
+          }
+        )
+      }
+      else{
+        response.status(201).json([])
+      }
     }
   )
 }
@@ -1620,16 +1658,32 @@ const updateTienda = async (request, response) =>{
     nombre_nuevo
   } = request.body
   pool.query(
-    'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
+    'SELECT * FROM TIENDA WHERE nombre=$1',
     [
-      nombre_antiguo,
-      nombre_nuevo
+      nombre_antiguo
     ],
     (error, results) => {
       if (error) {
         throw error;
       }
-      response.status(201).json({message:"listo"})
+      if(results.rowCount == 1){
+        pool.query(
+          'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
+          [
+            nombre_antiguo,
+            nombre_nuevo
+          ],
+          (error, results) => {
+            if (error) {
+              throw error;
+            }
+            response.status(201).json({message:"listo"})
+          }
+        )
+      }
+      else{
+        response.status(201).json([])
+      }
     }
   )
 }
