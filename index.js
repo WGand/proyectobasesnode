@@ -997,7 +997,6 @@ const updateEmpleado = async (request, response) => {
       if (error) {
         throw error;
       }
-      response.status(200).json(results.rowCount);
       usuarioCantidad = results.rowCount
       usuario = results.rows[0]
       if(usuarioCantidad == 0){
@@ -1571,7 +1570,7 @@ const postProducto = async (request, response) => {
           for(i = 0; i< results.rowCount; i++){
             
             pool.query(
-              'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3, $4)',
+              'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) SELECT ($1, $2, $3, $4) WHERE NOT EXISTS (SELECT 4 FROM "ALMACEN" WHERE fk_producto=$4)',
               [
                 'f',
                 100,
