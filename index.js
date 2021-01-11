@@ -197,7 +197,28 @@ const postUsuario = async (request, response) => {
                   }
                   datosUsuario[0]['telefono'] = results.rows[0]['numero_telefonico']
                   datosUsuario[0]['prefijo_telefono'] = results.rows[0]['prefijo']
-                  response.status(201).json(datosUsuario)
+                  pool.query(
+                    'SELECT * FROM "EMPLEADO_HORARIO" WHERE fk_empleado = $1',
+                    [rif],
+                    (error, results) => {
+                      if (error) {
+                        throw error;
+                      }
+                      pool.query(
+                        'SELECT * FROM "HORARIO" WHERE horario_id = $1',
+                        [results.rows[0]['fk_horario']],
+                        (error, results) => {
+                          if (error) {
+                            throw error;
+                          }
+                          datosUsuario[0]['hora_inicio'] = results.rows[0]['hora_inicio']
+                          datosUsuario[0]['hora_fin'] = results.rows[0]['hora_fin']
+                          datosUsuario[0]['dia'] = results.rows[0]['dia']
+                          response.status(201).json(datosUsuario)
+                        }
+                      )
+                    }
+                  )
                 }
               )
             }
@@ -1525,8 +1546,9 @@ const postProducto = async (request, response) => {
     UCABMART,
     categoria
   } = request.body
+  var producto_id
   pool.query(
-    'INSERT INTO "PRODUCTO" (imagen, nombre, precio, UCABMART, categoria) VALUES ($1, $2, $3, $4, $5)',
+    'INSERT INTO "PRODUCTO" (imagen, nombre, precio, UCABMART, categoria) VALUES ($1, $2, $3, $4, $5) RETURNING producto_id',
     [
       imagen,
       nombre,
@@ -1538,15 +1560,31 @@ const postProducto = async (request, response) => {
       if (error) {
         throw error;
       }
+      console.log(results)
+      producto_id = results.rows[0]['producto_id']
       pool.query(
         'SELECT tienda_id FROM "TIENDA"',
         (error, results) => {
           if (error) {
             throw error;
           }
-          console.log(results)
           for(i = 0; i< results.rowCount; i++){
-
+            
+            pool.query(
+              'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3, $4)',
+              [
+                'f',
+                100,
+                results.rows[i]['tienda_id'],
+                producto_id
+              ],
+              (error, results) => {
+                if (error) {
+                  throw error;
+                }
+                response.status(201).json({mensaje:"listo"})
+              }
+            )
           }
         }
       )
