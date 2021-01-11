@@ -1539,19 +1539,15 @@ const postProducto = async (request, response) => {
         throw error;
       }
       pool.query(
-        'INSERT INTO "PRODUCTO" (imagen, nombre, precio, UCABMART, categoria) VALUES ($1, $2, $3, $4, $5)',
-        [
-          imagen,
-          nombre,
-          precio,
-          UCABMART,
-          categoria
-        ],
+        'SELECT tienda_id FROM "TIENDA"',
         (error, results) => {
           if (error) {
             throw error;
           }
-          response.status(201).json(results);
+          console.log(results)
+          for(i = 0; i< results.rowCount; i++){
+
+          }
         }
       )
     }
