@@ -76,7 +76,7 @@ const postEspecificoLugar = async (request, response) => {
           }
           response.status(200).json(results.rows);
         }
-      );
+      )
       break;
     case "PARROQUIA":
       pool.query(
@@ -88,14 +88,14 @@ const postEspecificoLugar = async (request, response) => {
           }
           response.status(200).json(results.rows);
         }
-      );
+      )
       break;
     default:
       response
         .status(201)
         .json({ status: "failure", message: "NO HAY UN LUGAR ASIGNADO" });
   }
-};
+}
 
 const POSTLugar = async (request, response) => {
   const { nombre, tipo, lugar, tipo_lugar, tipo_lugar2, lugar2 } = request.body;
@@ -109,7 +109,7 @@ const POSTLugar = async (request, response) => {
         }
         response.status(201).json({ status: "success", message: "Funciono" });
       }
-    );
+    )
   } else {
     pool.query(
       'INSERT INTO "LUGAR" (nombre, tipo, fk_lugar) VALUES ($1, $2, ((SELECT lugar_id from "LUGAR" WHERE nombre = $3 AND tipo = $4)))',
@@ -120,9 +120,9 @@ const POSTLugar = async (request, response) => {
         }
         response.status(201).json({ status: "success", message: "Funciono" });
       }
-    );
+    )
   }
-};
+}
 
 const postUsuario = async (request, response) => {
   const { correo, contrasena, tipo } = request.body;
@@ -167,7 +167,7 @@ const postUsuario = async (request, response) => {
           response.status(201).json([])
         }
       }
-    );
+    )
   } else if (tipo == "empleado") {
     pool.query(
       'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $1 AND contrasena = $2',
@@ -207,7 +207,7 @@ const postUsuario = async (request, response) => {
           response.status(201).json([])
         }
       }
-    );
+    )
   }
   else if (tipo == 'juridico'){
     pool.query(
@@ -285,9 +285,9 @@ const postUsuario = async (request, response) => {
           response.status(201).json([])
         }
       }
-    );
+    )
   }
-};
+}
 
 function ordenarTelefonos(telefonos){
   var data = []
@@ -489,8 +489,8 @@ const buscarLugar = async (request, response) => {
       }
       response.status(201).json(results.rows)
     }
-  );
-};
+  )
+}
 
 const postNatural = async (request, response) => {
   const {
@@ -538,8 +538,8 @@ const postNatural = async (request, response) => {
       }
       )
     }
-  );
-};
+  )
+}
 
 const updateNatural = async (request, response) => {
   const {
@@ -612,11 +612,11 @@ const updateNatural = async (request, response) => {
             actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif,'natural')
             response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
           }
-        );
+        )
       }
     }
-  );
-};
+  )
+}
 
 const updateJuridico = async (request, response) => {
   var persona_contacto_id
@@ -690,7 +690,7 @@ const updateJuridico = async (request, response) => {
             }
             )
           }
-        );
+        )
       }
       else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
       response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
@@ -736,8 +736,8 @@ const updateJuridico = async (request, response) => {
         )
       }
     }
-  );
-};
+  )
+}
 
 const postValidarRif = async(request, response) =>{
   const{
@@ -888,8 +888,8 @@ const postJuridico = async (request, response) => {
       }
       )
     }
-  );
-};
+  )
+}
 
 const postEmpleado = async (request, response) => {
   const {
@@ -927,8 +927,8 @@ const postEmpleado = async (request, response) => {
       if (error) {
         throw error;
       }
-      registrarTelefono(telefono, prefijo, 'empleado')
-      registrarTelefono(celular, prefijo_celular, 'empleado')
+      registrarTelefono(telefono, prefijo, rif, 'empleado')
+      registrarTelefono(celular, prefijo_celular, rif, 'empleado')
       pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
         [hora_inicio, hora_fin, dia],
         (error, results) => {
@@ -947,18 +947,8 @@ const postEmpleado = async (request, response) => {
         }
       )
     }
-  );
-};
-
-//pool.query('UPDATE "EMPLEADO_HORARIO" SET fk_empleado=$1, fk_horario=$2',
-//[rif, results.rows[0]['horario_id']],
-//(error, results) => {
-//  if (error){
-//    throw error;
-//  }
-//  response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });
-//}
-//)
+  )
+}
 
 const updateEmpleado = async (request, response) => {
   const {
@@ -1009,7 +999,7 @@ const updateEmpleado = async (request, response) => {
             actualizarTelefono(celular, telefono, prefijo, prefijo_celular, 'empleado')
             response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
           }
-        );
+        )
       }
       else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
         response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
@@ -1033,11 +1023,11 @@ const updateEmpleado = async (request, response) => {
             actualizarTelefono(celular, telefono, prefijo, prefijo_celular, 'empleado')
             response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
           }
-        );
+        )
       }
     }
   )
-};
+}
 
 
 const postHorario = async (request, response) => {
@@ -1059,8 +1049,8 @@ const postHorario = async (request, response) => {
       }
       response.status(201).json(results);
     }
-  );
-};
+  )
+}
 
 const getControl = async (request, response) => {
   const { tipo } = request.body;
@@ -1073,8 +1063,8 @@ const getControl = async (request, response) => {
       }
       response.status(200).json(results.rowCount);
     }
-  );
-};
+  )
+}
 
 const getTodos = async (request, response) => {
   var todo = {}
@@ -1110,11 +1100,11 @@ const getTodos = async (request, response) => {
               todo['EMPLEADO'] = results.rows
               response.status(201).json(todo)
             }
-          );
+          )
         }
-      );
+      )
     }
-  );
+  )
 }
 
 const deleteNatural = async (request, response) => {
@@ -1341,7 +1331,6 @@ const postTienda = async (request, response) =>{
                             throw error;
                           }
                           response.status(201).json({message: "funciono"})
-                          
                         }
                       )
                     }
@@ -1449,19 +1438,14 @@ const deleteTienda = async (request, response) =>{
                                         throw error;
                                       }
                                       response.status(201).json({message:'todo bien'})
-                                      
                                     }
                                   )
-                                  
                                 }
                               )
-                              
                             }
                           )
-                          
                         }
                       )
-                      
                     }
                   )  
                 }
@@ -1476,20 +1460,59 @@ const deleteTienda = async (request, response) =>{
 
 const updateTienda = async (request, response) =>{
   const{
-    nombre,
-    fk_lugar
+    nombre_antiguo,
+    nombre_nuevo
   } = request.body
   pool.query(
-    'INSERT INTO "TIENDA" (nombre, fk_lugar) VALUES ($1, $2)',
+    'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
     [
-      nombre,
-      fk_lugar
+      nombre_antiguo,
+      nombre_nuevo
     ],
     (error, results) => {
       if (error) {
         throw error;
       }
-      response.status(201).json(results);
+      response.status(201).json({message:"listo"})
+    }
+  )
+}
+
+const getTienda = async (request, response) =>{
+  const{
+    nombre
+  } = request.body
+  var tienda_id
+  pool.query(
+    'SELECT * FROM "TIENDA"  WHERE nombre =$1',
+    [
+      nombre
+    ],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      tienda_id = results.rows[0]['tienda_id']
+      pool.query(
+        'SELECT * FROM "ALMACEN"  WHERE  fk_tienda=$1',
+        [
+          tienda_id
+        ],
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+          pool.query(
+            'SELECT * FROM "PRODUCTO"',
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              
+            }
+          )
+        }
+      )
     }
   )
 }
@@ -1515,19 +1538,38 @@ const postProducto = async (request, response) => {
       if (error) {
         throw error;
       }
-      response.status(201).json(results);
+      pool.query(
+        'INSERT INTO "PRODUCTO" (imagen, nombre, precio, UCABMART, categoria) VALUES ($1, $2, $3, $4, $5)',
+        [
+          imagen,
+          nombre,
+          precio,
+          UCABMART,
+          categoria
+        ],
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+          response.status(201).json(results);
+        }
+      )
     }
   )
 }
+
+app .route("/inventario")
+    .post(getTienda)
 
 app
   .route("/tienda")
   .post(postTienda)
   .delete(deleteTienda)
+  .put(updateTienda)
 
 app
   .route("/producto")
-
+  .post(postProducto)
 
 app
   .route("/lugarparroquia")
