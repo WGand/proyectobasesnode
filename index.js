@@ -1079,7 +1079,7 @@ const getHorario = async (request, response) => {
       if (error) {
         throw error;
       }
-      response.status(201).json(results);
+      response.status(201).json(results.rows);
     }
   )
 }
@@ -1516,41 +1516,12 @@ const getTienda = async (request, response) =>{
   } = request.body
   var tienda_id
   pool.query(
-    'SELECT * FROM "TIENDA"  WHERE nombre =$1',
-    [
-      nombre
-    ],
+    'SELECT "ALMACEN".cantidad, "PRODUCTO".* FROM "PRODUCTO" INNER JOIN "ALMACEN" ON "PRODUCTO".producto_id = "ALMACEN".fk_producto',
     (error, results) => {
       if (error) {
         throw error;
       }
-      tienda_id = results.rows[0]['tienda_id']
-      pool.query(
-        'SELECT * FROM "ALMACEN"  WHERE  fk_tienda=$1',
-        [
-          tienda_id
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          almacen = results.rows
-          pool.query(
-            'SELECT * FROM "PRODUCTO"',
-            (error, results) => {
-              if (error) {
-                throw error;
-              }
-              productos = results.rows
-              console.log(productos)
-              console.log(almacen)
-              for(i = 0; i < results.rowCount; i++){
-                
-              }
-            }
-          )
-        }
-      )
+      console.log(results.rows)
     }
   )
 }
@@ -1681,7 +1652,7 @@ app
   .put(updateJuridico)
   .delete(deleteJuridico)
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`Server listening`);
 });
