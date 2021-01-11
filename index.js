@@ -1016,7 +1016,7 @@ const updateEmpleado = async (request, response) => {
             if (error) {
               throw error;
             }
-            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, 'empleado')
+            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif, 'empleado')
             response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
           }
         )
@@ -1040,7 +1040,7 @@ const updateEmpleado = async (request, response) => {
             if (error) {
               throw error;
             }
-            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, 'empleado')
+            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif, 'empleado')
             response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
           }
         )
@@ -1562,29 +1562,16 @@ const postProducto = async (request, response) => {
       console.log(results)
       producto_id = results.rows[0]['producto_id']
       pool.query(
-        'SELECT tienda_id FROM "TIENDA"',
+        'SELECT fk_tienda FROM "ALMACEN" WHERE NOT EXISTS(SELECT fk_producto FROM ALMACEN WHERE fk_producto =$1)',
+        [
+          producto_id
+        ],
         (error, results) => {
           if (error) {
             throw error;
           }
-          for(i = 0; i< results.rowCount; i++){
-            
-            pool.query(
-              'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) SELECT ($1, $2, $3, $4) WHERE NOT EXISTS (SELECT 4 FROM "ALMACEN" WHERE fk_producto=$4)',
-              [
-                'f',
-                100,
-                results.rows[i]['tienda_id'],
-                producto_id
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                response.status(201).json({mensaje:"listo"})
-              }
-            )
-          }
+
+          
         }
       )
     }
