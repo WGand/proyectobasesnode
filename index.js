@@ -1072,6 +1072,18 @@ const postHorario = async (request, response) => {
   )
 }
 
+const getHorario = async (request, response) => {
+  pool.query(
+    'SELECT * FROM "HORARIO"',
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(201).json(results);
+    }
+  )
+}
+
 const getControl = async (request, response) => {
   const { tipo } = request.body;
   pool.query(
@@ -1522,13 +1534,19 @@ const getTienda = async (request, response) =>{
           if (error) {
             throw error;
           }
+          almacen = results.rows
           pool.query(
             'SELECT * FROM "PRODUCTO"',
             (error, results) => {
               if (error) {
                 throw error;
               }
-              
+              productos = results.rows
+              console.log(productos)
+              console.log(almacen)
+              for(i = 0; i < results.rowCount; i++){
+                
+              }
             }
           )
         }
@@ -1559,19 +1577,37 @@ const postProducto = async (request, response) => {
       if (error) {
         throw error;
       }
-      console.log(results)
       producto_id = results.rows[0]['producto_id']
       pool.query(
-        'SELECT fk_tienda FROM "ALMACEN" WHERE NOT EXISTS(SELECT fk_producto FROM ALMACEN WHERE fk_producto =$1)',
-        [
-          producto_id
-        ],
+        'SELECT tienda_id FROM "TIENDA"',
         (error, results) => {
           if (error) {
             throw error;
           }
-
-          
+          if(results.rowCount>0){
+            for(i = 0; i< results.rowCount; i++){
+              if(results.rows[i]['fk_tienda'] != undefined){
+                pool.query(
+                  'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3, $4)',
+                  [
+                    'f',
+                    100,
+                    results.rows[i]['fk_tienda'],
+                    producto_id
+                  ],
+                  (error, results) => {
+                    if (error) {
+                      throw error;
+                    }
+                  }
+                )
+              }
+            }
+            response.status(201).json({mensaje:"listo"})
+          }
+          else if(results.rowCount == 0){
+            response.status(201).json([])
+          }       
         }
       )
     }
@@ -1616,6 +1652,10 @@ app
 app
   .route("/buscarLugar")
   .post(buscarLugar)
+
+app
+  .route("/horario")
+  .get(getHorario)
 
 app
   .route("/lugar")
