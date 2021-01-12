@@ -2,12 +2,47 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { pool } = require("./config");
+const PDFDocument = require('pdf-creator-node');
+const fs = require("fs");
 
 const app = express();
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+
+const archivo = async(request, response)  => {
+  var html = fs.readFileSync('./index.html', 'utf-8')
+  var options = {
+    format: "A3",
+    orientation: "portrait",
+    border: "10mm",
+    header: {
+      height: "45mm",
+      contents: ''
+    },
+    "footer":{
+      "height":"28mm",
+      "contents":{
+        first: '',
+        2:'Second page',
+        default:'',
+        last: ''
+      }}
+    }
+  var document = {
+    html: html,
+    path: "./output.pdf"}
+    PDFDocument.create(document, options)
+    .then(res => {
+       console.log(res)
+    })
+    .catch(error => {
+       console.error(error)
+    });
+    var data = fs.readFileSync('./output.pdf')
+    response.contentType("application/pdf")
+    response.send(data)
+}
 
 const postLugarParroquia = async (request, response) => {
   const {parroquia} = request.body
@@ -1688,7 +1723,35 @@ const updateTienda = async (request, response) =>{
   )
 }
 
-const getTienda = async (request, response) =>{
+const getTienda = async(request, response) => {
+  pool.query(
+    'SELECT * FROM "TIENDA"',
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(201).json(results.rows)
+    }
+  )
+}
+
+const postValidarTienda = async(request, response) => {
+  const{
+    nombre
+  } = request.body
+  pool.query(
+    'SELECT * FROM "TIENDA" WHERE nombre=$1',
+    [nombre],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.status(201).json(results.rows)
+    }
+  )
+}
+
+const getTiendax = async (request, response) =>{
   const{
     nombre
   } = request.body
@@ -1763,8 +1826,11 @@ const postProducto = async (request, response) => {
   )
 }
 
+app .route("/Documento")
+    .get(archivo)
+
 app .route("/inventario")
-    .post(getTienda)
+    .get(getTienda)
 
 app
   .route("/tienda")
@@ -1783,6 +1849,10 @@ app
 app
   .route("/rif")
   .post(postValidarRif)
+
+app
+  .route("/validarTienda")
+  .post(postValidarTienda)
 
 app
   .route("/correo")
