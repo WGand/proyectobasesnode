@@ -1782,20 +1782,37 @@ const postValidarTienda = async(request, response) => {
   )
 }
 
-const getTiendax = async (request, response) =>{
+const postInventario = async (request, response) =>{
   const{
-    nombre
+    tienda_id
   } = request.body
-  var tienda_id
-  pool.query(
-    'SELECT "ALMACEN".cantidad, "PRODUCTO".* FROM "PRODUCTO" INNER JOIN "ALMACEN" ON "PRODUCTO".producto_id = "ALMACEN".fk_producto',
-    (error, results) => {
-      if (error) {
-        throw error;
+  if(tienda_id != ''){
+    pool.query(
+      'SELECT * FROM "TIENDA" WHERE tienda_id=$1',
+      [tienda_id],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        if(results.rowCount == 1){
+          pool.query(
+            'SELECT "ALMACEN".cantidad, "PRODUCTO".* FROM "PRODUCTO" INNER JOIN "ALMACEN" ON "PRODUCTO".producto_id = "ALMACEN".fk_producto WHERE fk_tienda=$1',
+            [tienda_id],
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              response.status(201).json(results.rows)
+            }
+          )
+        }else{
+          response.status(201).json([])
+        }
       }
-      response.status(201).json(results.rows)
-    }
-  )
+    )
+  }else{
+    response.status(201).json([])
+  }
 }
 
 const postProducto = async (request, response) => {
@@ -1862,6 +1879,7 @@ app .route("/Documento")
 
 app .route("/inventario")
     .get(getTienda)
+    .post(postInventario)
 
 app
   .route("/tienda")
