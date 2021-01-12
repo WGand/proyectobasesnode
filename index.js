@@ -124,18 +124,17 @@ const archivo = async(nombre, apellido, cedula, cliente)  => {
 
 const reporteHorario = async(request, response) =>{
   pool.query('SELECT * FROM "ASISTENCIA"',
-  [rif],
   (error, results) =>{
       if (error){
         throw error
       }
-      pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO".fk_horario, "HORARIO".* ',
-      [rif],
+      console.log(results.rows)
+      pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO", "HORARIO".*, "ASISTENCIA".* FROM (("ASISTENCIA" INNER JOIN "EMPLEADO" ON "EMPLEADO".rif ="ASISTENCIA".fk_empleado)("EMPLEADO_HORARIO" INNER JOIN "HORARIO" ON "EMPLEADO_HORARIO".fk_horario = "HORARIO".horario_id) INNER JOIN "EMPLEADO" ON "EMPLEADO".rif = "EMPLEADO_HORARIO".fk_empleado)',
       (error, results) =>{
           if (error){
             throw error
           }
-    
+          response.status(201).json(results.rows)
         }
       )
     }
@@ -699,7 +698,7 @@ const postNatural = async (request, response) => {
   } = request.body;
   if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && tipo_cedula != '' && lugar != ''){
     if(rif.length == 9 && correo.includes('@') && (tipo_cedula.includes('v') || tipo_cedula.includes('e') || tipo_cedula.includes('E') || tipo_cedula.includes('V')
-    && contrasena.length >7 && prefijo.length == 4, prefijo_celular.length == 4, telefono.length == 4, celular.length == 4)){
+    && contrasena.length >7 && prefijo.length == 4, prefijo_celular.length == 4, telefono.length == 7, celular.length == 7)){
       pool.query(
         'SELECT * FROM "NATURAL" WHERE rif=$1 OR correo_electronico=$2',
         [
@@ -1974,6 +1973,9 @@ const postProducto = async (request, response) => {
     }
   )
 }
+
+app .route("/reportehorario")
+    .get(reporteHorario)
 
 app .route("/Documento")
     .post(subir)
