@@ -4,11 +4,36 @@ const cors = require("cors");
 const { pool } = require("./config");
 const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
+const multer = require('multer')
+
+const excelWorker = require('exceljs')
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+
+global.__basedir = __dirname;
+ 
+// -> Multer Upload Storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+     cb(null, __basedir + '/uploads/')
+  },
+  filename: (req, file, cb) => {
+     cb(null, file.fieldname + "-" + Date.now() + "-" + file.originalname)
+  }
+});
+
+const upload = multer({storage: storage});
+ 
+// -> Express Upload RestAPIs
+app.post('/api/uploadfile', upload.single("uploadfile"), (req, res) =>{
+  importExcelData2MySQL(__basedir + '/uploads/' + req.file.filename);
+  res.json({
+        'msg': 'File uploaded/import successfully!', 'file': req.file
+      });
+});
 
 const archivo = async(nombre, apellido, cedula, cliente)  => {
   var html = fs.readFileSync('./index.html', 'utf-8')
@@ -1821,6 +1846,9 @@ const postInventario = async (request, response) =>{
             (error, results) => {
               if (error) {
                 throw error;
+              }
+              for(i = 0; i < results.rowCount; i++){
+                results.rows[i]['id'] = results.rows[i]['producto_id']
               }
               response.status(201).json(results.rows)
             }
