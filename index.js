@@ -4,36 +4,84 @@ const cors = require("cors");
 const { pool } = require("./config");
 const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
-const multer = require('multer')
-
-const excelWorker = require('exceljs')
-
+xlsxj = require("xlsx-to-json")
+const multer = require("multer");
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-global.__basedir = __dirname;
- 
-// -> Multer Upload Storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-     cb(null, __basedir + '/uploads/')
-  },
-  filename: (req, file, cb) => {
-     cb(null, file.fieldname + "-" + Date.now() + "-" + file.originalname)
-  }
-});
+function convertirArchivo(){
+  xlsxj({
+    input: "./uploads/horario.xlsx", 
+    output: "output.json"
+  }, function(err, result) {
+    if(err) {
+      console.error(err);
+    }else {
+      return result
+    }
+  });
+}
 
-const upload = multer({storage: storage});
- 
-// -> Express Upload RestAPIs
-app.post('/api/uploadfile', upload.single("uploadfile"), (req, res) =>{
-  importExcelData2MySQL(__basedir + '/uploads/' + req.file.filename);
-  res.json({
-        'msg': 'File uploaded/import successfully!', 'file': req.file
-      });
+function wait(milleseconds) {
+  return new Promise(resolve => setTimeout(resolve, milleseconds))
+}
+
+const horarioEmpleados = async(request, response) => {
+  convertirArchivo()
+  data = JSON.parse(fs.readFileSync('output.json','utf-8'))
+  for(let i = 2; i < 480; i++){
+    if(data[i]['RIF'] != '' && data[i]['RIF'].length == 9 && data['HORA DE ENTRADA'] != "NaN:NaN"){
+      await wait(300)
+      await pool.query(
+        'SELECT * FROM "EMPLEADO" WHERE rif=$1',
+        [data[i]['RIF']],
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+          if(results.rowCount == 1){
+            pool.query(
+              'INSERT INTO "ASISTENCIA" (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
+              [data[i]['FECHA'], data[i]['HORA DE ENTRADA'], data[i]['HORA DE SALIDA'], data[i]['RIF']],
+              (error, results) => {
+                if (error) {
+                  throw error;
+                }
+              }
+            )
+          }
+        }
+      )
+    }
+  }
+  response.status(201).json({mensaje:"listo"})
+}
+
+app.use(bodyParser.json());
+var storage = multer.diskStorage({ //multers disk storage settings
+    destination: function (req, file, cb) {
+        cb(null, './uploads/')
+    },
+    filename: function (req, file, cb) {
+        var datetimestamp = Date.now();
+        cb(null,file.originalname)
+    }
 });
+var upload = multer({ //multer settings
+                storage: storage
+            }).single('file');
+
+const subir = async(req, res) =>{
+  upload(req,res,function(err){
+    if(err){
+      res.json({error_code:1,err_desc:err});
+      return;
+ }
+  res.json({error_code:0,err_desc:null});
+  })
+}
 
 const archivo = async(nombre, apellido, cedula, cliente)  => {
   var html = fs.readFileSync('./index.html', 'utf-8')
@@ -72,6 +120,26 @@ const archivo = async(nombre, apellido, cedula, cliente)  => {
     })
     .catch(error => {
     });
+}
+
+const reporteHorario = async(request, response) =>{
+  pool.query('SELECT * FROM "ASISTENCIA"',
+  [rif],
+  (error, results) =>{
+      if (error){
+        throw error
+      }
+      pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO".fk_horario, "HORARIO".* ',
+      [rif],
+      (error, results) =>{
+          if (error){
+            throw error
+          }
+    
+        }
+      )
+    }
+  )
 }
 
 const imprimirCarnetUsuario = async(request, response) =>{
@@ -1110,8 +1178,6 @@ const postEmpleado = async (request, response) => {
   } = request.body;
   if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
   prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != ''){
-    console.log(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
-    prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != '')
     if(rif.length == 9 && correo.includes('@') && contrasena.length > 7 && telefono.length == 7 && prefijo.length == 4 && celular.length == 7 && prefijo_celular.length == 4){
       pool.query(
         'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $2 AND rif = $1',
@@ -1309,7 +1375,6 @@ const getTodos = async (request, response) => {
       if (error) {
         throw error;
       }
-      if(results.rowCount>0){
         for(i=0; i < results.rowCount; i++){
           results.rows[i]['id'] = results.rows[i]['rif']
         }
@@ -1320,7 +1385,6 @@ const getTodos = async (request, response) => {
             if (error) {
               throw error;
             }
-            if(results.rowCount >0){
               for(i=0; i < results.rowCount; i++){
                 results.rows[i]['id'] = results.rows[i]['rif']
               }
@@ -1331,27 +1395,16 @@ const getTodos = async (request, response) => {
                   if (error) {
                     throw error;
                   }
-                  if(results.rowCount > 0){
                     for(i=0; i < results.rowCount; i++){
                       results.rows[i]['id'] = results.rows[i]['rif']
                     }
                     todo['EMPLEADO'] = results.rows
                     response.status(201).json(todo)
-                  }
-                  else{
-                    response.status(201).json([])
-                  }
                 }
               )
-            }else{
-              response.status(201).json([])
             }
-          }
         )
-      }else{
-        response.status(201).json([])
       }
-    }
   )
 }
 
@@ -1923,7 +1976,8 @@ const postProducto = async (request, response) => {
 }
 
 app .route("/Documento")
-    .post(imprimirCarnetUsuario)
+    .post(subir)
+    .get(horarioEmpleados)
 
 app .route("/inventario")
     .get(getTienda)
