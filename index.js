@@ -1732,7 +1732,7 @@ const updateTienda = async (request, response) =>{
         }
         if(results.rowCount == 1){
           pool.query(
-            'SELECT * "TIENDA" SET WHERE nombre=$1',
+            'SELECT * FROM "TIENDA" SET WHERE nombre=$1',
             [
               nombre_nuevo
             ],
