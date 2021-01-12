@@ -59,7 +59,9 @@ const imprimirCarnetUsuario = async(request, response) =>{
       }
       if(results.rowCount == 1){
         archivo(results.rows[0]['primer_nombre'], results.rows[0]['primer_apellido'], results.rows[0]['cedula_identidad'], results.rows[0]['rif'])
-        response.status(201).json({mensaje:"Se creó"})
+        var data = fs.readFileSync('./output.pdf')
+        response.contentType("application/pdf")
+        response.send(data)
       }
       else{
         response.status(201).json({mensaje:"No se encontr[o"})
@@ -1083,6 +1085,8 @@ const postEmpleado = async (request, response) => {
   } = request.body;
   if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
   prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != ''){
+    console.log(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
+    prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != '')
     if(rif.length == 9 && correo.includes('@') && contrasena.length > 7 && telefono.length == 7 && prefijo.length == 4 && celular.length == 7 && prefijo_celular.length == 4){
       pool.query(
         'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $2 AND rif = $1',
@@ -1717,7 +1721,7 @@ const updateTienda = async (request, response) =>{
     nombre_nuevo
   } = request.body
   pool.query(
-    'SELECT * FROM TIENDA WHERE nombre=$1',
+    'SELECT * FROM "TIENDA" WHERE nombre=$1',
     [
       nombre_antiguo
     ],
