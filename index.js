@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-const archivo = async(request, response)  => {
+const archivo = async(nombre, apellido, cedula, cliente)  => {
   var html = fs.readFileSync('./index.html', 'utf-8')
   var options = {
     format: "A3",
@@ -29,19 +29,43 @@ const archivo = async(request, response)  => {
         last: ''
       }}
     }
+  var usuario = {
+    nombre: nombre,
+    apellido: apellido,
+    cedula: cedula,
+    cliente: cliente,
+    tienda: '001'
+  }
   var document = {
     html: html,
+    data:{
+      user: usuario
+    },
     path: "./output.pdf"}
     PDFDocument.create(document, options)
     .then(res => {
-       console.log(res)
     })
     .catch(error => {
-       console.error(error)
     });
-    var data = fs.readFileSync('./output.pdf')
-    response.contentType("application/pdf")
-    response.send(data)
+}
+
+const imprimirCarnetUsuario = async(request, response) =>{
+  const {rif} = request.body
+  pool.query('SELECT * FROM "NATURAL" WHERE rif = $1',
+  [rif],
+  (error, results) =>{
+      if (error){
+        throw error
+      }
+      if(results.rowCount == 1){
+        archivo(results.rows[0]['primer_nombre'], results.rows[0]['primer_apellido'], results.rows[0]['cedula_identidad'], results.rows[0]['rif'])
+        response.status(201).json({mensaje:"Se creó"})
+      }
+      else{
+        response.status(201).json({mensaje:"No se encontr[o"})
+      }
+    }
+  )
 }
 
 const postLugarParroquia = async (request, response) => {
@@ -1730,6 +1754,9 @@ const getTienda = async(request, response) => {
       if (error) {
         throw error;
       }
+      for(i = 0; i < results.rowCount; i++){
+        results.rows[i]['id'] = results.rows[i]['tienda_id']
+      }
       response.status(201).json(results.rows)
     }
   )
@@ -1827,7 +1854,7 @@ const postProducto = async (request, response) => {
 }
 
 app .route("/Documento")
-    .get(archivo)
+    .post(imprimirCarnetUsuario)
 
 app .route("/inventario")
     .get(getTienda)
