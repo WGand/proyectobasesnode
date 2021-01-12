@@ -1720,35 +1720,55 @@ const updateTienda = async (request, response) =>{
     nombre_antiguo,
     nombre_nuevo
   } = request.body
-  pool.query(
-    'SELECT * FROM "TIENDA" WHERE nombre=$1',
-    [
-      nombre_antiguo
-    ],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      if(results.rowCount == 1){
-        pool.query(
-          'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
-          [
-            nombre_antiguo,
-            nombre_nuevo
-          ],
-          (error, results) => {
-            if (error) {
-              throw error;
+  if(nombre_antiguo != '' && nombre_nuevo != ''){
+    pool.query(
+      'SELECT * FROM "TIENDA" WHERE nombre=$1',
+      [
+        nombre_antiguo
+      ],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        if(results.rowCount == 1){
+          pool.query(
+            'SELECT * "TIENDA" SET WHERE nombre=$1',
+            [
+              nombre_nuevo
+            ],
+            (error, results) => {
+              if (error) {
+                throw error;
+              }
+              if(results.rowCount == 0){
+                pool.query(
+                  'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
+                  [
+                    nombre_nuevo,
+                    nombre_antiguo
+                  ],
+                  (error, results) => {
+                    if (error) {
+                      throw error;
+                    }
+                    response.status(201).json({message:"listo"})
+                  }
+                )
+              }
+              else{
+                response.status(201).json([])
+              }
             }
-            response.status(201).json({message:"listo"})
-          }
-        )
+          )
+        }
+        else{
+          response.status(201).json([])
+        }
       }
-      else{
-        response.status(201).json([])
-      }
-    }
-  )
+    )
+  }else{
+    response.status(201).json([])
+  }
 }
 
 const getTienda = async(request, response) => {
