@@ -6,6 +6,7 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
+const {Validador} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -123,20 +124,50 @@ const archivo = async(nombre, apellido, cedula, cliente)  => {
 }
 
 const reporteHorario = async(request, response) =>{
-  pool.query('SELECT * FROM "ASISTENCIA"',
+  pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO".*, "HORARIO".*, "ASISTENCIA".* FROM (("EMPLEADO_HORARIO" INNER JOIN "HORARIO" ON "EMPLEADO_HORARIO".fk_horario = "HORARIO".horario_id) INNER JOIN "EMPLEADO" ON "EMPLEADO".rif = "EMPLEADO_HORARIO".fk_empleado) INNER JOIN "ASISTENCIA" ON "ASISTENCIA".fk_empleado = "EMPLEADO".rif',
   (error, results) =>{
       if (error){
         throw error
       }
-      console.log(results.rows)
-      pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO", "HORARIO".*, "ASISTENCIA".* FROM (("ASISTENCIA" INNER JOIN "EMPLEADO" ON "EMPLEADO".rif ="ASISTENCIA".fk_empleado)("EMPLEADO_HORARIO" INNER JOIN "HORARIO" ON "EMPLEADO_HORARIO".fk_horario = "HORARIO".horario_id) INNER JOIN "EMPLEADO" ON "EMPLEADO".rif = "EMPLEADO_HORARIO".fk_empleado)',
-      (error, results) =>{
-          if (error){
-            throw error
-          }
-          response.status(201).json(results.rows)
+      for(i = 0; i < results.rowCount; i++){
+        if(results.rows[i]['horario_entrada'] == results.rows[i]['hora_inicio'] && results.rows[i]['horario_salida'] == results.rows[i]['hora_fin']){
+          results.rows[i]['cumplio'] = 'SI'
         }
-      )
+        else{
+          results.rows[i]['cumplio'] = 'NO'
+        }
+      }
+      let obj = results.rows
+      var k = '<table>'
+      k+= '<tr>';
+      k+= '<td>' + 'C.I' + '</td>';
+      k+= '<td>' + 'PRIMER NOMBRE'+ '</td>';
+      k+= '<td>' + 'SEGUNDO NOMBRE'+ '</td>';
+      k+= '<td>' + 'PRIMER APELLIDO'+ '</td>';
+      k+= '<td>' + 'SEGUNDO APELLIDO'+ '</td>';
+      k+= '<td>' + 'FECHA'+ '</td>';
+      k+= '<td>' + 'HORARIO ENTRADA' + '</td>';
+      k+= '<td>' + 'HORARIO SALIDA'+ '</td>';
+      k+= '<td>' + 'CUMPLIMIENTO'+ '</td>';
+      k+= '</tr>';
+      for(i = 0;i < obj.length; i++){
+          k+= '<tr>';
+          k+= '<td>' + obj[i]['cedula_identidad'] + '</td>';
+          k+= '<td>' + obj[i]['primer_nombre'] + '</td>';
+          k+= '<td>' + obj[i]['segundo_nombre'] + '</td>';
+          k+= '<td>' + obj[i]['primer_apellido'] + '</td>';
+          k+= '<td>' + obj[i]['segundo_apellido'] + '</td>';
+          k+= '<td>' + obj[i]['fecha'] + '</td>';
+          k+= '<td>' + obj[i]['horario_entrada'] + '</td>';
+          k+= '<td>' + obj[i]['horario_salida'] + '</td>';
+          k+= '<td>' + obj[i]['cumplio'] + '</td>';
+          k+= '</tr>';
+      }
+      k+='</table>';
+      fs.writeFile('./reporteH.html', k, function (err) {
+        if (err) throw err;               console.log('Results Received');
+      }); 
+        response.status(201).json({message:"listo"})
     }
   )
 }
@@ -151,9 +182,7 @@ const imprimirCarnetUsuario = async(request, response) =>{
       }
       if(results.rowCount == 1){
         archivo(results.rows[0]['primer_nombre'], results.rows[0]['primer_apellido'], results.rows[0]['cedula_identidad'], results.rows[0]['rif'])
-        var data = fs.readFileSync('./output.pdf')
-        response.contentType("application/pdf")
-        response.send(data)
+        response.status(201).json({mensae:"listo"})
       }
       else{
         response.status(201).json({mensaje:"No se encontr[o"})
@@ -843,6 +872,7 @@ const updateNatural = async (request, response) => {
   }
 }
 
+
 const updateJuridico = async (request, response) => {
   var persona_contacto_id
   const {
@@ -870,8 +900,7 @@ const updateJuridico = async (request, response) => {
   telefono != ''&& prefijo_telefono != '' && celular != '' && prefijo_celular != ''&& lugar != '' && persona_contacto_nombre != '' && persona_contacto_apellido != '' 
   && persona_contacto_telefono != '' && persona_contacto_celular != '' && persona_contacto_prefijo_celular != '' && persona_contacto_prefijo_telefono != ''){
     if(rif.length == 9 && correo.includes('@') && pagina_web.includes('.com') && contrasena.length > 7 && telefono.length == 7 && prefijo_telefono.length == 4 &&
-    celular.length == 7 && prefijo_celular.length == 4 && persona_contacto_telefono.length == 7 && persona_contacto_celular.length == 7 && persona_contacto_prefijo_celular.length == 4 &&
-    persona_contacto_prefijo_telefono.length == 4){
+    celular.length == 7 && prefijo_celular.length == 4){
       pool.query(
         'SELECT * FROM "JURIDICO" WHERE correo_electronico =$1',
         [
@@ -1156,6 +1185,7 @@ const postJuridico = async (request, response) => {
   }
 }
 
+
 const postEmpleado = async (request, response) => {
   const {
     rif,
@@ -1177,7 +1207,7 @@ const postEmpleado = async (request, response) => {
   } = request.body;
   if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
   prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != ''){
-    if(rif.length == 9 && correo.includes('@') && contrasena.length > 7 && telefono.length == 7 && prefijo.length == 4 && celular.length == 7 && prefijo_celular.length == 4){
+    if(rif.length == 9 && correo.includes('@') && contrasena.length > 7 && validador.telefono(telefono) && prefijo.length == 4 && celular.length == 7 && prefijo_celular.length == 4){
       pool.query(
         'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $2 AND rif = $1',
         [
@@ -1973,6 +2003,9 @@ const postProducto = async (request, response) => {
     }
   )
 }
+
+app .route("/carnet")
+    .post(imprimirCarnetUsuario)
 
 app .route("/reportehorario")
     .get(reporteHorario)
