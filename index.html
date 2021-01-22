@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<title>ID UCABMART</title>
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Spartan:wght@900&display=swap" rel="stylesheet">
+</head>
+<style>
+	* {
+	margin: 00px;
+	padding: 00px;
+	box-sizing: content-box;
+
+}
+
+.container {
+	height: 100vh;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: transparent;
+	flex-direction: row;
+	flex-flow: wrap;
+}
+
+.font{
+	height: 375px;
+	width: 250px;
+	position: relative;
+	border-radius: 10px;
+
+}
+
+.top{
+	background-image: url(https://1.bp.blogspot.com/-2MJo_yjxnHU/X_1HCAz_10I/AAAAAAACH_4/NoREBrbrSd4HfO96FBC0PcYnuj3TvLfCACLcBGAsYHQ/s1117/topback.jpg);
+	background-repeat: no-repeat;
+	background-size: 250px;
+	background-position: center -1%; 
+	height: 30%;
+	width: 100%;
+	background-color: transparent;
+	position: relative;
+	z-index: 5;
+	border-top-left-radius: 15px;
+	border-top-right-radius: 15px;
+
+}
+
+.bottom{
+	background: url(https://1.bp.blogspot.com/-2MJo_yjxnHU/X_1HCAz_10I/AAAAAAACH_4/NoREBrbrSd4HfO96FBC0PcYnuj3TvLfCACLcBGAsYHQ/s1117/topback.jpg);
+	background-repeat: no-repeat;
+	background-size: 250px;
+	background-position: center 80%; 
+	height: 70%;
+	width: 100%;
+	background-color: transparent;
+	position: absolute;
+	border-bottom-left-radius: 15px;
+	border-bottom-right-radius: 15px;
+
+}
+
+.top img{
+	height:100px;
+	width: 100px;
+	background-color: transparent;
+	border-radius: 50px;
+	position: absolute;
+	top: 60px;
+	left: 75px;
+}
+
+.bottom .nombre{
+	position: relative;
+	top: 60px;
+	text-align: center;
+	font-family: 'Spartan', sans-serif;
+	text-transform: capitalize;
+	font-weight: bold;
+	font-size: 20px;
+	text-emphasis: spacing;
+}
+
+.bottom b{
+	position: relative;
+	top: 60px;
+	text-align: center;
+	font-family: 'Open Sans', sans-serif;
+	text-transform: capitalize;
+	font-weight: bold;
+	font-size: 20px;
+	text-emphasis: spacing;
+
+}
+
+.bottom .info{
+	color: black;
+
+}
+
+.barcode img{
+	height: 75px;
+	width: 75px;
+	text-align: center;
+	margin: 4px;
+}
+
+.barcode{
+	text-align: center;
+	position: relative;
+	top: 55px;
+}
+</style>
+<body>
+
+	<div class="container">
+		<div class="padding">
+			<div class="font">
+				<div class="top">
+					<img id="proPic" src="">
+				</div>
+				<div class="bottom">
+					<b id="nombre" class="nombre">{{user.nombre}} </b>
+					<b></b>
+					<b id="apellido" class="nombre">{{user.apellido}}</b>
+					<div class="info">
+						<b>C.I.</b><b id="ced">{{user.cedula}}</b><br>
+						<b>Cliente #</b><b id="num_cliente">{{user.cliente}}</b><br>
+						<b>Tienda#</b><b id="num_tienda">{{user.tienda}}</b><br>
+					</div>
+					<div class="barcode">
+						<img id="qrcode" src="qr.png">
+					</div>
+					<br>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+	var qrcode = document.getElementById("qrcode");	
+	var proPic = document.getElementById("proPic");
+
+	//Variables 
+
+	qrcode.src = "https://upload.wikimedia.org/wikipedia/commons/d/d7/Commons_QR_code.png";
+	proPic.src = "https://lh3.googleusercontent.com/proxy/2qwx1Mw4DRc5kw_H5YxJ5FRStCZxzsD-Ds1c-41K3_IRIkno0cl7Aixe4ucKBZq2kaV9P8uw-K2xeF41oHZJ8AcVTPK60AonAYqqEZT6UXbK63N3";
+	</script>
+
+</body>
+</html>
