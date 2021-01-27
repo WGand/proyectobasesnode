@@ -6,7 +6,7 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
-const {Validador} = require('./clases')
+const {Validador, Empleado, Natural, ValidadorUsuario, Lugar} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -1185,7 +1185,6 @@ const postJuridico = async (request, response) => {
   }
 }
 
-
 const postEmpleado = async (request, response) => {
   const {
     rif,
@@ -2004,6 +2003,18 @@ const postProducto = async (request, response) => {
   )
 }
 
+const productosOrdenados = async(request, response) =>{
+  pool.query(
+    'SELECT * FROM "PRODUCTO" ORDER BY nombre;',
+    (error, results) => {
+      if (error) {
+        throw error
+      }
+      response.status(201).json(results.rows)
+    }
+  )
+}
+
 app .route("/carnet")
     .post(imprimirCarnetUsuario)
 
@@ -2026,6 +2037,7 @@ app
 
 app
   .route("/producto")
+  .get(productosOrdenados)
   .post(postProducto)
 
 app
