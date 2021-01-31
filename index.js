@@ -6,11 +6,12 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
-const {Validador, Empleado, Natural, ValidadorUsuario, Lugar} = require('./clases')
+const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+let validador = new ValidadorUsuario()
 
 function convertirArchivo(){
   xlsxj({
@@ -711,7 +712,7 @@ const buscarLugar = async (request, response) => {
 const postNatural = async (request, response) => {
   const {
     rif,
-    correo,
+    correo_electronico,
     cedula,
     primer_nombre,
     segundo_nombre,
@@ -720,61 +721,30 @@ const postNatural = async (request, response) => {
     contrasena,
     tipo_cedula,
     telefono,
-    prefijo,
+    prefijo_telefono,
     celular,
     prefijo_celular,
-    lugar
+    parroquia,
+    municipio,
+    estado
   } = request.body;
-  if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && tipo_cedula != '' && lugar != ''){
-    if(rif.length == 9 && correo.includes('@') && (tipo_cedula.includes('v') || tipo_cedula.includes('e') || tipo_cedula.includes('E') || tipo_cedula.includes('V')
-    && contrasena.length >7 && prefijo.length == 4, prefijo_celular.length == 4, telefono.length == 7, celular.length == 7)){
-      pool.query(
-        'SELECT * FROM "NATURAL" WHERE rif=$1 OR correo_electronico=$2',
-        [
-          rif,
-          correo
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount == 0){
-            pool.query(
-              'INSERT INTO "NATURAL" (rif, correo_electronico, cedula_identidad, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, contrasena, tipo_cedula, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9, $10)',
-              [
-                rif,
-                correo,
-                cedula,
-                primer_nombre,
-                segundo_nombre,
-                primer_apellido,
-                segundo_apellido,
-                contrasena,
-                tipo_cedula,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
-                [telefono, prefijo, rif],
-                (error, results) => {
-                  if (error){
-                    throw error;
-                  }
-                  registrarTelefono(celular, prefijo_celular, rif, 'natural')
-                  response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
-                }
-                )
-              }
-            )
-          }
-          else{
-            response.status(201).json([])
-          }
+
+  if(Object.keys(request.body).length == 16){
+    if(validador.natural(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Natural(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula)
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      if(!(await validador.existeRif(usuario.rif, usuario.tipo_usuario_tabla)) && !(await validador.existeCorreo(usuario.rif, usuario.tipo_usuario_tabla))){
+        if((await usuario.insertarUsuario()) == 1 && (await usuario.telefono.insertarTelefono(usuario.rif, usuario.tipo_usuario)) == 1 &&
+        (await usuario.telefono.insertarCelular(usuario.rif, usuario.tipo_usuario)) == 1){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
-      )
+      }
+      else{
+        response.status(201).json([])
+      }
     }
     else{
       response.status(201).json([])
@@ -788,80 +758,39 @@ const postNatural = async (request, response) => {
 const updateNatural = async (request, response) => {
   const {
     rif,
-    correo,
+    correo_electronico,
     primer_nombre,
     segundo_nombre,
     primer_apellido,
     segundo_apellido,
     contrasena,
     telefono,
-    prefijo,
+    prefijo_telefono,
     celular,
     prefijo_celular,
-    lugar
+    parroquia,
+    municipio,
+    estado
   } = request.body;
-  var usuario
-  if(rif != '' && correo != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && lugar != ''){
-    if(rif.length == 9 && correo.includes('@') && contrasena.length >7 && prefijo.length == 4, prefijo_celular.length == 4, telefono.length == 4, celular.length == 4){
-      pool.query(
-        'SELECT * FROM "NATURAL" WHERE correo_electronico=$1',
-        [
-          correo
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          usuarioCantidad = results.rowCount
-          usuario = results.rows[0]
-          if(usuarioCantidad == 0){
-            pool.query(
-              'UPDATE "NATURAL" SET  correo_electronico=$2, primer_nombre=$3, segundo_nombre =$4, primer_apellido=$5, segundo_apellido=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
-              [
-                rif,
-                correo,
-                primer_nombre,
-                segundo_nombre,
-                primer_apellido,
-                segundo_apellido,
-                contrasena,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif,'natural')
-                response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
-              }
-            );
-          }
-          else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-            response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
-          }
-          else if(usuarioCantidad > 0 && usuario['rif'] == rif){
-            pool.query(
-              'UPDATE "NATURAL" SET primer_nombre=$2, segundo_nombre =$3, primer_apellido=$4, segundo_apellido=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
-              [
-                rif,
-                primer_nombre,
-                segundo_nombre,
-                primer_apellido,
-                segundo_apellido,
-                contrasena,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif,'natural')
-                response.status(201).json({ status: "Funciono", message: "Registro exitoso" });
-              }
-            )
-          }
+  if(Object.keys(request.body).length == 14){
+    if(validador.natural(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Natural(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      if(await validador.existeRif(usuario.rif, usuario.tipo_usuario_tabla)){
+        if((await usuario.actualizarUsuario()) && (await usuario.telefono.actualizarTelefono(usuario.rif, usuario.tipo_usuario))
+        && (await usuario.telefono.actualizarCelular(usuario.rif, usuario.tipo_usuario))){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
-      )
+        else{
+          response.status(201).json([])
+        }
+      }
+      else{
+        response.status(201).json([])
+      }
     }
     else{
       response.status(201).json([])
@@ -872,6 +801,22 @@ const updateNatural = async (request, response) => {
   }
 }
 
+const deleteNatural = async (request, response) => {
+  const { rif } = request.body;
+  let usuario = new Natural(rif)
+  await usuario.usuarioExiste()
+  if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
+    if(await usuario.eliminarUsuario()){
+      response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
 
 const updateJuridico = async (request, response) => {
   var persona_contacto_id
@@ -1436,34 +1381,6 @@ const getTodos = async (request, response) => {
   )
 }
 
-const deleteNatural = async (request, response) => {
-  const { rif } = request.body;
-  pool.query(
-    'SELECT * FROM "NATURAL" WHERE rif = $1',
-    [rif],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      if(results.rowCount == 1){
-        borrarTelefono(rif, 'natural')
-        pool.query(
-          'DELETE FROM "NATURAL" WHERE rif = $1',
-          [rif],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            response.status(200).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
-          }
-        )
-      }else{
-        response.status(201).json([])
-      }
-    }
-  )
-}
-
 const deleteJuridico = async (request, response) => {
   const { rif } = request.body;
   pool.query(
@@ -2005,7 +1922,7 @@ const postProducto = async (request, response) => {
 
 const productosOrdenados = async(request, response) =>{
   pool.query(
-    'SELECT * FROM "PRODUCTO" ORDER BY nombre;',
+    'SELECT * FROM "PRODUCTO" ORDER BY nombre',
     (error, results) => {
       if (error) {
         throw error
@@ -2014,6 +1931,41 @@ const productosOrdenados = async(request, response) =>{
     }
   )
 }
+
+const postpruebaprueba = async(request, response) => {
+  const{
+    rif, 
+    correo_electronico, 
+    contrasena, 
+    denominacion_comercial, 
+    razon_social, 
+    pagina_web, 
+    capital_disponible, 
+    telefono,
+    prefijo_telefono, 
+    celular, 
+    prefijo_celular, 
+    parroquia, 
+    municipio, 
+    estado, 
+    persona_contacto_nombre, 
+    persona_contacto_primer_apellido,
+    persona_contacto_segundo_apellido, 
+    persona_contacto_telefono, 
+    persona_contacto_prefijo_telefono, 
+    persona_contacto_celular,
+    persona_contacto_prefijo_celular
+  } = request.body
+  console.log(request.body)
+  let usuario = new Juridico(rif)
+  if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
+  validador.PersonaContacto(request.body)){
+    console.log(await usuario.usuarioExiste())
+  }
+}
+
+app .route("/pruebaprueba")
+    .post(postpruebaprueba)
 
 app .route("/carnet")
     .post(imprimirCarnetUsuario)
