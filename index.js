@@ -807,23 +807,19 @@ const postEmpleado = async (request, response) => {
           response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
         else{
-          console.log('err1')
-          response.status(201).json({status: "ERR1"})
+          response.status(201).json([])
         }
       }
       else{
-        console.log('err2')
-        response.status(201).json({status: "ERR2"})
+        response.status(201).json([])
       }
     }
     else{
-      console.log('err3')
-      response.status(201).json({status: "ERR3"})
+      response.status(201).json([])
     }
   }
   else{
-    console.log('err4')
-    response.status(201).json({status: "ERR3"})
+    response.status(201).json([])
   }
 }
 
