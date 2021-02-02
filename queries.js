@@ -564,6 +564,23 @@ const inserTarjeta = async(tarjeta, rif, tipo) =>{
     })
 }
 
+const deleteTarjeta = async(rif, tipo) =>{
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'DELETE FROM "TARJETA" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto
@@ -596,5 +613,9 @@ module.exports = {
     insertEmpleadoHorario: insertEmpleadoHorario,
     //horario
     readHorario: readHorario,
-    readHorarioSinId: readHorarioSinId
+    readHorarioSinId: readHorarioSinId,
+    //tarjeta
+    readTarjeta: readTarjeta,
+    inserTarjeta: inserTarjeta,
+    deleteTarjeta: deleteTarjeta
 }

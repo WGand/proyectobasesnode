@@ -7,6 +7,7 @@ const {
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     readHorario, readHorarioSinId,
+    readTarjeta, inserTarjeta, deleteTarjeta,
     readLugar
     } = require('./queries')
 
@@ -877,7 +878,6 @@ class Tarjeta extends TipoPago{
         this.nombre_tarjeta = nombre_tarjeta
         this.tipo = tipo
     }
-    
 }
 
 exports.ValidadorUsuario = ValidadorUsuario

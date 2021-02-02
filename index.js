@@ -790,6 +790,7 @@ const postEmpleado = async (request, response) => {
     prefijo_celular,
     horario
   } = request.body;
+  console.log(request.body)
   if(Object.keys(request.body).length == 17){
     if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
@@ -806,18 +807,22 @@ const postEmpleado = async (request, response) => {
           response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
         else{
+          console.log('err1')
           response.status(201).json({status: "ERR1"})
         }
       }
       else{
+        console.log('err2')
         response.status(201).json({status: "ERR2"})
       }
     }
     else{
+      console.log('err3')
       response.status(201).json({status: "ERR3"})
     }
   }
   else{
+    console.log('err4')
     response.status(201).json({status: "ERR3"})
   }
 }
