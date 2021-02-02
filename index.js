@@ -6,7 +6,7 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
-const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico} = require('./clases')
+const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico, PersonaContacto, Contenedor, Horario} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -805,9 +805,72 @@ const deleteNatural = async (request, response) => {
   const { rif } = request.body;
   let usuario = new Natural(rif)
   await usuario.usuarioExiste()
-  if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
-    if(await usuario.eliminarUsuario()){
-      response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  if(usuario != null && usuario != undefined){
+    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
+      if(await usuario.eliminarUsuario()){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const postJuridico = async (request, response) => {
+  const{
+    rif, 
+    correo_electronico, 
+    contrasena, 
+    denominacion_comercial, 
+    razon_social, 
+    pagina_web, 
+    capital_disponible, 
+    telefono,
+    prefijo_telefono, 
+    celular, 
+    prefijo_celular, 
+    parroquia, 
+    municipio, 
+    estado, 
+    persona_contacto_nombre, 
+    persona_contacto_primer_apellido,
+    persona_contacto_segundo_apellido, 
+    persona_contacto_telefono, 
+    persona_contacto_prefijo_telefono, 
+    persona_contacto_celular,
+    persona_contacto_prefijo_celular
+  } = request.body
+  if(Object.keys(request.body).length == 21){
+    if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
+    validador.PersonaContacto(request.body)){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Juridico(rif, correo_electronico, contrasena, denominacion_comercial, razon_social, pagina_web, capital_disponible)
+      let personaContacto = new PersonaContacto(persona_contacto_nombre, persona_contacto_primer_apellido, persona_contacto_segundo_apellido)
+      personaContacto.telefono = new Telefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_celular, persona_contacto_prefijo_celular)
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      if((await usuario.insertarUsuario()) == 1 && (await usuario.telefono.insertarCelular(usuario.rif, usuario.tipo_usuario)) ==1 &&
+      (await usuario.telefono.insertarTelefono(usuario.rif, usuario.tipo_usuario)) == 1){
+        if((await personaContacto.insertarPersonaContacto(usuario.rif)) == 1 && 
+        (await personaContacto.telefono.insertarTelefono(personaContacto.id, personaContacto.tipo_usuario)) == 1 && 
+        (await personaContacto.telefono.insertarCelular(personaContacto.id, personaContacto.tipo_usuario)) == 1){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+        }
+        else{
+          response.status(201).json([])
+        }
+      }
+      else{
+        response.status(201).json([])
+      }
     }
     else{
       response.status(201).json([])
@@ -819,133 +882,210 @@ const deleteNatural = async (request, response) => {
 }
 
 const updateJuridico = async (request, response) => {
-  var persona_contacto_id
+  const {
+    rif, 
+    correo_electronico, 
+    contrasena, 
+    denominacion_comercial, 
+    razon_social, 
+    pagina_web, 
+    capital_disponible, 
+    telefono,
+    prefijo_telefono, 
+    celular, 
+    prefijo_celular, 
+    parroquia, 
+    municipio, 
+    estado, 
+    persona_contacto_nombre, 
+    persona_contacto_primer_apellido,
+    persona_contacto_segundo_apellido, 
+    persona_contacto_telefono, 
+    persona_contacto_prefijo_telefono, 
+    persona_contacto_celular,
+    persona_contacto_prefijo_celular
+  } = request.body;
+  if(Object.keys(request.body).length == 21){
+    if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
+    validador.PersonaContacto(request.body)){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Juridico(rif, correo_electronico, contrasena, denominacion_comercial, razon_social, pagina_web, capital_disponible)
+      let personaContacto = new PersonaContacto(persona_contacto_nombre, persona_contacto_primer_apellido, persona_contacto_segundo_apellido)
+      personaContacto.telefono = new Telefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_celular, 
+        persona_contacto_prefijo_celular)
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      if(await usuario.actualizarUsuario() && await usuario.telefono.actualizarCelular(usuario.rif, usuario.tipo_usuario) &&
+      await usuario.telefono.actualizarTelefono(usuario.rif, usuario.tipo_usuario)){
+        if(await personaContacto.actualizarPersonaContacto(usuario.rif) && 
+        await personaContacto.telefono.actualizarTelefono(personaContacto.id, personaContacto.tipo_usuario) &&
+        await personaContacto.telefono.actualizarCelular(personaContacto.id, personaContacto.tipo_usuario)){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+        }
+        else{
+          response.status(201).json([])
+        }
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const deleteJuridico = async (request, response) => {
+  const{
+    rif, 
+  } = request.body
+  let usuario = new Juridico(rif)
+  await usuario.usuarioExiste()
+  if(usuario != null && usuario != undefined){
+    usuario.persona_contacto = new PersonaContacto()
+    await usuario.persona_contacto.personaExiste(rif)
+    await usuario.persona_contacto.idPersona(rif)
+    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
+      if(await usuario.persona_contacto.eliminarPersonaContacto(rif)){
+        if(await usuario.eliminarUsuario()){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+        }
+        else{
+          response.status(201).json([])
+        }
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const postEmpleado = async (request, response) => {
   const {
     rif,
-    correo,
-    denominacion_comercial,
-    razon_social,
-    pagina_web,
-    capital_disponible,
+    correo_electronico,
+    cedula,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
     contrasena,
+    tipo_cedula,
+    parroquia,
+    municipio,
+    estado,
     telefono,
     prefijo_telefono,
     celular,
     prefijo_celular,
-    lugar,
-    persona_contacto_nombre,
-    persona_contacto_apellido,
-    persona_contacto_segundo_apellido,
-    persona_contacto_telefono,
-    persona_contacto_celular,
-    persona_contacto_prefijo_celular,
-    persona_contacto_prefijo_telefono
+    horario
   } = request.body;
-  if(rif !='' && correo != '' && denominacion_comercial != '' && razon_social != '' && pagina_web != '' && capital_disponible != '' && contrasena != '' &&
-  telefono != ''&& prefijo_telefono != '' && celular != '' && prefijo_celular != ''&& lugar != '' && persona_contacto_nombre != '' && persona_contacto_apellido != '' 
-  && persona_contacto_telefono != '' && persona_contacto_celular != '' && persona_contacto_prefijo_celular != '' && persona_contacto_prefijo_telefono != ''){
-    if(rif.length == 9 && correo.includes('@') && pagina_web.includes('.com') && contrasena.length > 7 && telefono.length == 7 && prefijo_telefono.length == 4 &&
-    celular.length == 7 && prefijo_celular.length == 4){
-      pool.query(
-        'SELECT * FROM "JURIDICO" WHERE correo_electronico =$1',
-        [
-          correo
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          usuarioCantidad = results.rowCount
-          usuario = results.rows[0]
-          if(usuarioCantidad == 0){
-            pool.query(
-              'UPDATE "JURIDICO" SET correo_electronico =$2, denominacion_comercial=$3, razon_social=$4, pagina_web=$5, capital_disponible=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
-              [
-                rif,
-                correo,
-                denominacion_comercial,
-                razon_social,
-                pagina_web,
-                capital_disponible,
-                contrasena,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                actualizarTelefono(celular,telefono, prefijo_telefono, prefijo_celular, rif, 'juridico')
-                pool.query('UPDATE "PERSONA_CONTACTO" SET nombre=$1, primer_apellido=$2, segundo_apellido=$3 WHERE fk_juridico=$4',
-                [persona_contacto_nombre, persona_contacto_apellido, persona_contacto_segundo_apellido, rif],
-                (error, results) => {
-                  if (error){
-                    throw error;
-                  }
-                  pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
-                  [rif],
-                  (error, results) => {
-                    if (error){
-                      throw error;
-                    }
-                    persona_contacto_id = results.rows[0]['persona_id']
-                    actualizarTelefono(persona_contacto_celular, persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
-                    response.status(201).json({ status: "success", message: "Funciono" })
-                  }
-                  )
-                }
-                )
-              }
-            )
-          }
-          else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-          response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
-          }
-          else if(usuarioCantidad > 0 && usuario['rif'] == rif){
-              pool.query(
-                'UPDATE "JURIDICO" SET denominacion_comercial=$2, razon_social=$3, pagina_web=$4, capital_disponible=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
-                [
-                  rif,
-                  denominacion_comercial,
-                  razon_social,
-                  pagina_web,
-                  capital_disponible,
-                  contrasena,
-                  lugar
-                ],
-                (error, results) => {
-                  if (error) {
-                    throw error;
-                  }
-                  actualizarTelefono(celular,telefono, prefijo_telefono, prefijo_celular, rif, 'juridico')
-                  pool.query('UPDATE "PERSONA_CONTACTO" SET nombre=$1, primer_apellido=$2, segundo_apellido=$3 WHERE fk_juridico=$4',
-                  [persona_contacto_nombre, persona_contacto_apellido, persona_contacto_segundo_apellido, rif],
-                  (error, results) => {
-                    if (error){
-                      throw error;
-                    }
-                    pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
-                    [rif],
-                    (error, results) => {
-                      if (error){
-                        throw error;
-                      }
-                      
-                      persona_contacto_id = results.rows[0]['persona_id']
-                      actualizarTelefono(persona_contacto_celular, persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
-                      response.status(201).json({ status: "success", message: "Funciono" })
-                      }
-                    )
-                  }
-                )
-              }
-            )
-          }
+  if(Object.keys(request.body).length == 17){
+    if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Empleado(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula)
+      let contenedor = new Contenedor(rif)
+      let hora = new Horario()
+      await contenedor.ordenarHorario(horario)
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      if(!(await validador.existeRif(usuario.rif, usuario.tipo_usuario_tabla)) && !(await validador.existeCorreo(usuario.rif, usuario.tipo_usuario_tabla))){
+        if((await usuario.insertarUsuario()) == 1 && (await usuario.telefono.insertarTelefono(usuario.rif, usuario.tipo_usuario)) == 1 &&
+        (await usuario.telefono.insertarCelular(usuario.rif, usuario.tipo_usuario)) == 1 && (await hora.insertarEmpleadoHorario(rif, contenedor.contenedor))){
+          response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
-      )
-    }else{
+        else{
+          response.status(201).json([])
+        }
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
       response.status(201).json([])
     }
-  }else{
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const updateEmpleado = async (request, response) => {
+  const {
+    rif,
+    correo_electronico,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
+    contrasena,
+    parroquia,
+    municipio,
+    estado,
+    telefono,
+    prefijo_telefono,
+    celular,
+    prefijo_celular,
+    horario
+  } = request.body
+  if(Object.keys(request.body).length == 15){
+    let contenedor = new Contenedor(rif)
+    if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 
+    && await contenedor.ordenarHorario(horario)){
+      let lugarUsuario = new Lugar(parroquia, municipio, estado)
+      let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
+      let usuario = new Empleado(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
+      let horario = new Horario()
+      usuario.lugar = lugarUsuario
+      usuario.telefono = telefonoUsuario
+      usuario.contenedor = contenedor
+      if(await usuario.actualizarUsuario() && await usuario.telefono.actualizarTelefono(usuario.rif, usuario.tipo_usuario) &&
+      usuario.telefono.actualizarCelular(usuario.rif, usuario.tipo_usuario) && horario.actualizarHorario(rif, contenedor.contenedor)){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+   }
+   else{
+     response.status(201).json([])
+   }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const deleteEmpleado = async (request, response) => {
+  const { rif } = request.body;
+  let usuario = new Empleado(rif)
+  let horario = new Horario()
+  await usuario.usuarioExiste()
+  if(usuario != null && usuario != undefined){
+    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario) && await horario.eliminarHorario(rif)){
+      if(await usuario.eliminarUsuario()){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
     response.status(201).json([])
   }
 }
@@ -1038,260 +1178,6 @@ const postValidarCorreo = async(request, response) =>{
   }
 }
 
-const postJuridico = async (request, response) => {
-  var persona_contacto_id
-  const {
-    rif,
-    correo,
-    denominacion_comercial,
-    razon_social,
-    pagina_web,
-    capital_disponible,
-    contrasena,
-    telefono,
-    prefijo_telefono,
-    celular,
-    prefijo_celular,
-    lugar,
-    persona_contacto_nombre,
-    persona_contacto_apellido,
-    persona_contacto_telefono,
-    persona_contacto_celular,
-    persona_contacto_prefijo_celular,
-    persona_contacto_prefijo_telefono
-  } = request.body;
-  if(rif !='' && correo != '' && denominacion_comercial != '' && razon_social != '' && pagina_web != '' && capital_disponible != '' && contrasena != '' &&
-  telefono != ''&& prefijo_telefono != '' && celular != '' && prefijo_celular != ''&& lugar != '' && persona_contacto_nombre != '' && persona_contacto_apellido != '' 
-  && persona_contacto_telefono != '' && persona_contacto_celular != '' && persona_contacto_prefijo_celular != '' && persona_contacto_prefijo_telefono != ''){
-    if(rif.length == 9 && correo.includes('@') && pagina_web.includes('.com') && contrasena.length > 7 && telefono.length == 7 && prefijo_telefono.length == 4 &&
-    celular.length == 7 && prefijo_celular.length == 4 && persona_contacto_telefono.length == 7 && persona_contacto_celular.length == 7 && persona_contacto_prefijo_celular.length == 4 &&
-    persona_contacto_prefijo_telefono.length == 4){
-      pool.query(
-        'SELECT FROM "JURIDICO" WHERE rif =$1 OR correo_electronico=$2',
-        [
-          rif,
-          correo
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount == 0){
-            pool.query(
-              'INSERT INTO "JURIDICO" (rif, correo_electronico, denominacion_comercial, razon_social, pagina_web, capital_disponible, contrasena, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7, $8)',
-              [
-                rif,
-                correo,
-                denominacion_comercial,
-                razon_social,
-                pagina_web,
-                capital_disponible,
-                contrasena,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                registrarTelefono(celular, prefijo_celular, rif, 'juridico')
-                registrarTelefono(telefono, prefijo_telefono, rif, 'juridico')
-                pool.query('INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, fk_juridico) VALUES ($1,$2,$3)',
-                [persona_contacto_nombre, persona_contacto_apellido, rif],
-                (error, results) => {
-                  if (error){
-                    throw error;
-                  }
-                  pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
-                  [rif],
-                  (error, results) => {
-                    if (error){
-                      throw error;
-                    }
-                    persona_contacto_id = results.rows[0]['persona_id']
-                    registrarTelefono(persona_contacto_celular, persona_contacto_prefijo_celular, persona_contacto_id, 'persona_contacto')
-                    registrarTelefono(persona_contacto_telefono, persona_contacto_prefijo_telefono, persona_contacto_id, 'persona_contacto')
-                    response.status(201).json({ status: "success", message: "Funciono" })
-                  }
-                  )
-                }
-                )
-              }
-            )
-          }else{
-            response.status(201).json([])
-          }
-        }
-      )
-    }else{
-      response.status(201).json([])
-    }
-  }else{
-    response.status(201).json([])
-  }
-}
-
-const postEmpleado = async (request, response) => {
-  const {
-    rif,
-    correo,
-    cedula,
-    primer_nombre,
-    segundo_nombre,
-    primer_apellido,
-    segundo_apellido,
-    contrasena,
-    telefono,
-    prefijo,
-    celular,
-    prefijo_celular,
-    lugar,
-    hora_inicio,
-    hora_fin,
-    dia
-  } = request.body;
-  if(rif != '' && correo != '' && cedula != '' && primer_nombre != '' && primer_apellido != '' && contrasena != '' && telefono != '' && lugar != '' &&
-  prefijo != '' && celular != '' && prefijo_celular != '' && hora_inicio != '' && hora_fin != '' && dia != ''){
-    if(rif.length == 9 && correo.includes('@') && contrasena.length > 7 && validador.telefono(telefono) && prefijo.length == 4 && celular.length == 7 && prefijo_celular.length == 4){
-      pool.query(
-        'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $2 AND rif = $1',
-        [
-          rif,
-          correo
-        ],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount == 0){
-            pool.query(
-              'INSERT INTO "EMPLEADO" (rif, correo_electronico, cedula_identidad, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, contrasena, fk_lugar) VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)',
-              [
-                rif,
-                correo,
-                cedula,
-                primer_nombre,
-                segundo_nombre,
-                primer_apellido,
-                segundo_apellido,
-                contrasena,
-                lugar
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                registrarTelefono(telefono, prefijo, rif, 'empleado')
-                registrarTelefono(celular, prefijo_celular, rif, 'empleado')
-                pool.query('SELECT horario_id FROM "HORARIO" WHERE hora_inicio =$1 AND hora_fin =$2 and dia=$3',
-                  [hora_inicio, hora_fin, dia],
-                  (error, results) => {
-                    if (error){
-                      throw error;
-                    }
-                    pool.query('INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
-                    [rif, results.rows[0]['horario_id']],
-                    (error, results) => {
-                      if (error){
-                        throw error;
-                      }
-                      response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" });    
-                    }
-                    )
-                  }
-                )
-              }
-            )
-          }else{
-            response.status(201).json([])
-          }
-        }
-      )
-    }else{
-      response.status(201).json([])
-    }
-  }else{
-    response.status(201).json([])
-  }
-}
-
-const updateEmpleado = async (request, response) => {
-  const {
-    rif,
-    correo,
-    cedula,
-    primer_nombre,
-    segundo_nombre,
-    primer_apellido,
-    segundo_apellido,
-    contrasena,
-    telefono,
-    prefijo,
-    celular,
-    prefijo_celular,
-    lugar,
-    hora_inicio,
-    hora_fin,
-    dia
-  } = request.body;
-  pool.query(
-    'SELECT * FROM "EMPLEADO" WHERE correo_electronico = $1',
-    [correo],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      usuarioCantidad = results.rowCount
-      usuario = results.rows[0]
-      if(usuarioCantidad == 0){
-        pool.query(
-          'UPDATE "EMPLEADO" SET correo_electronico=$2, primer_nombre = $3, segundo_nombre=$4, primer_apellido=$5, segundo_apellido=$6, contrasena=$7, fk_lugar=$8 WHERE rif=$1',
-          [
-            rif,
-            correo,
-            primer_nombre,
-            segundo_nombre,
-            primer_apellido,
-            segundo_apellido,
-            contrasena,
-            lugar
-          ],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif, 'empleado')
-            response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
-          }
-        )
-      }
-      else if(usuarioCantidad > 0 && (usuario['rif'] != rif)){
-        response.status(201).json({ status: "Error", message: "Existe una cuenta registrada con ese correo" });
-      }
-      else if(usuarioCantidad > 0 && usuario['rif'] == rif){
-        pool.query(
-          'UPDATE "EMPLEADO" SET primer_nombre = $2, segundo_nombre=$3, primer_apellido=$4, segundo_apellido=$5, contrasena=$6, fk_lugar=$7 WHERE rif=$1',
-          [
-            rif,
-            primer_nombre,
-            segundo_nombre,
-            primer_apellido,
-            segundo_apellido,
-            contrasena,
-            lugar
-          ],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            actualizarTelefono(celular, telefono, prefijo, prefijo_celular, rif, 'empleado')
-            response.status(201).json({ status: "Funciono", message: "Usuario registrado exitosamente" })
-          }
-        )
-      }
-    }
-  )
-}
-
 const postHorario = async (request, response) => {
   const {
     hora_inicio,
@@ -1378,89 +1264,6 @@ const getTodos = async (request, response) => {
             }
         )
       }
-  )
-}
-
-const deleteJuridico = async (request, response) => {
-  const { rif } = request.body;
-  pool.query(
-    'SELECT * FROM "JURIDICO" WHERE rif = $1',
-    [rif],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      if(results.rowCount == 1){
-        borrarTelefono(rif, 'juridico')
-        pool.query('SELECT persona_id FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
-        [rif],
-        (error, results) => {
-          if (error){
-            throw error;
-          }
-          persona_contacto_id = results.rows[0]['persona_id']
-          borrarTelefono(persona_contacto_id, 'persona_contacto')
-          pool.query('DELETE FROM "PERSONA_CONTACTO" WHERE fk_juridico = $1',
-          [rif],
-          (error, results) => {
-            if (error){
-              throw error;
-            }
-            pool.query('DELETE FROM "JURIDICO" WHERE rif = $1',
-            [rif],
-            (error, results) => {
-              if (error){
-                throw error;
-              }
-              response.status(201).json({ status: "success", message: "Funciono" })
-            }
-            )
-          }
-          )
-        }
-        )
-      }else{
-        response.status(201).json([])
-      }
-    }
-  )
-}
-
-const deleteEmpleado = async (request, response) => {
-  const { rif } = request.body;
-  pool.query(
-    'SELECT * FROM "EMPLEADO" WHERE rif = $1',
-    [rif],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      if(results.rowCount == 1){
-        borrarTelefono(rif, 'empleado')
-        pool.query(
-          'DELETE FROM "EMPLEADO_HORARIO" WHERE fk_empleado = $1',
-          [rif],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            pool.query(
-              'DELETE FROM "EMPLEADO" WHERE rif = $1',
-              [rif],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-              response.status(200).json({ status: "Funciono", message: "Usuario eliminado exitosamente" })
-              }
-            )
-          }
-        )
-      }
-      else if(results.rowCount == 0){
-        response.status(200).json([])
-      }
-    }
   )
 }
 
@@ -1933,34 +1736,25 @@ const productosOrdenados = async(request, response) =>{
 }
 
 const postpruebaprueba = async(request, response) => {
-  const{
-    rif, 
-    correo_electronico, 
-    contrasena, 
-    denominacion_comercial, 
-    razon_social, 
-    pagina_web, 
-    capital_disponible, 
-    telefono,
-    prefijo_telefono, 
-    celular, 
-    prefijo_celular, 
-    parroquia, 
-    municipio, 
-    estado, 
-    persona_contacto_nombre, 
-    persona_contacto_primer_apellido,
-    persona_contacto_segundo_apellido, 
-    persona_contacto_telefono, 
-    persona_contacto_prefijo_telefono, 
-    persona_contacto_celular,
-    persona_contacto_prefijo_celular
-  } = request.body
-  console.log(request.body)
-  let usuario = new Juridico(rif)
-  if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
-  validador.PersonaContacto(request.body)){
-    console.log(await usuario.usuarioExiste())
+  const { rif } = request.body;
+  let usuario = new Empleado(rif)
+  let horario = new Horario()
+  await usuario.usuarioExiste()
+  if(usuario != null && usuario != undefined){
+    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario) && await horario.eliminarHorario(rif)){
+      if(await usuario.eliminarUsuario()){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
   }
 }
 

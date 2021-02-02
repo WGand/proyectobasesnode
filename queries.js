@@ -125,8 +125,8 @@ const insertUsuarioJuridico = async(usuario) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'INSERT INTO "JURIDICO" (rif, correo_electronico, denominacion_comercial, razon_social, pagina_web, capital_disponible, contrasena, fk_lugar)'+ 
-            'VALUES ($1,$2,$3,$4,$5,$6,$7,$8, (SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, "LUGAR" c WHERE a.fk_lugar = b.lugar_id AND b.fk_lugar '+
-            '= c.lugar_id AND a.nombre = $10 AND b.nombre = $11 AND c.nombre = $12 ))',
+            'VALUES ($1,$2,$3,$4,$5,$6,$7, (SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, "LUGAR" c WHERE a.fk_lugar = b.lugar_id AND b.fk_lugar '+
+            '= c.lugar_id AND a.nombre = $8 AND b.nombre = $9 AND c.nombre = $10 ))',
             [
                 usuario.rif,
                 usuario.correo_electronico,
@@ -152,13 +152,13 @@ const insertUsuarioJuridico = async(usuario) =>{
 const updateUsuarioJuridico = async(usuario) => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "JURIDICO" SET correo_electronico=$2, correo_electronico=$3, denominacion_social=$4, pagina_web=$5, capital_disponible=$6, '+
+            'UPDATE "JURIDICO" SET correo_electronico=$2, denominacion_comercial=$3, razon_social=$4, pagina_web=$5, capital_disponible=$6, '+
             'contrasena=$7, fk_lugar=(SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, "LUGAR" c WHERE a.fk_lugar = b.lugar_id AND b.fk_lugar '+
-            '= c.lugar_id AND a.nombre = $8 AND b.nombre = $9 AND c.nombre = $10 ) WHERE rif=$1',
+            '= c.lugar_id AND a.nombre = $8 AND b.nombre = $9 AND c.nombre = $10) WHERE rif=$1',
         [
             usuario.rif,
             usuario.correo_electronico,
-            usuario.denominacion_social,
+            usuario.denominacion_comercial,
             usuario.razon_social,
             usuario.pagina_web,
             usuario.capital_disponible,
@@ -180,6 +180,83 @@ const deleteUsuarioJuridico = async(usuario) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'DELETE FROM "JURIDICO" WHERE rif = $1',
+            [
+                usuario.rif
+            ],
+            (error, results) => {
+              if (error) {
+                reject(error)
+              }
+              resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const insertUsuarioEmpleado = async(usuario) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "EMPLEADO" (rif, correo_electronico, cedula_identidad, primer_nombre, segundo_nombre, primer_apellido,'+
+            'segundo_apellido, contrasena, tipo_cedula, fk_lugar) VALUES ($1, $2, $3, $4, $5,'+
+            '$6, $7, $8, $9, (SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, "LUGAR" c WHERE a.fk_lugar = b.lugar_id AND b.fk_lugar '+
+            '= c.lugar_id AND a.nombre = $10 AND b.nombre = $11 AND c.nombre = $12))',
+            [
+                usuario.rif,
+                usuario.correo_electronico,
+                usuario.cedula,
+                usuario.primer_nombre,
+                usuario.segundo_nombre,
+                usuario.primer_apellido,
+                usuario.segundo_apellido,
+                usuario.contrasena,
+                usuario.tipo_cedula,
+                usuario.lugar.parroquia,
+                usuario.lugar.municipio,
+                usuario.lugar.estado
+            ],
+            (error, results) =>{
+                if (error) {
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateUsuarioEmpleado = async(usuario) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "EMPLEADO" SET correo_electronico=$2, primer_nombre=$3, segundo_nombre=$4, primer_apellido=$5,'+
+            'segundo_apellido=$6, contrasena=$7, fk_lugar = (SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, '+
+            '"LUGAR" c WHERE a.fk_lugar = b.lugar_id AND b.fk_lugar = c.lugar_id AND a.nombre = $8 AND b.nombre'+
+            ' = $9 AND c.nombre = $10) WHERE rif=$1',
+            [
+                usuario.rif,
+                usuario.correo_electronico,
+                usuario.primer_nombre,
+                usuario.segundo_nombre,
+                usuario.primer_apellido,
+                usuario.segundo_apellido,
+                usuario.contrasena,
+                usuario.lugar.parroquia,
+                usuario.lugar.municipio,
+                usuario.lugar.estado
+            ],
+            (error, results) =>{
+                if (error) {
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteUsuarioEmpleado = async(usuario) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "EMPLEADO" WHERE rif = $1',
             [
                 usuario.rif
             ],
@@ -228,7 +305,7 @@ const readPersonaContacto = async(rif) =>{
     })
 }
 
-const insertPersonaContacto = async(usuario) =>{
+const insertPersonaContacto = async(usuario, rif_juridico) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'INSERT INTO "PERSONA_CONTACTO" (nombre, primer_apellido, segundo_apellido, fk_juridico) VALUES ($1, $2, $3, $4)',
@@ -236,7 +313,7 @@ const insertPersonaContacto = async(usuario) =>{
                 usuario.nombre,
                 usuario.primer_apellido,
                 usuario.segundo_apellido,
-                usuario.rif_juridico
+                rif_juridico
             ],
             (error, results) => {
                 if (error) {
@@ -248,13 +325,14 @@ const insertPersonaContacto = async(usuario) =>{
     })
 }
 
-const updatePersonaContacto = async(usuario) =>{
+const updatePersonaContacto = async(usuario, rif_juridico) =>{
     return new Promise((resolve, reject) =>{
-        pool.query('UPDATE "PERSONA_CONTACTO" SET nombre=$1, primer_apellido=$2, segundo_apellido=$3',
+        pool.query('UPDATE "PERSONA_CONTACTO" SET nombre=$1, primer_apellido=$2, segundo_apellido=$3 WHERE fk_juridico=$4',
             [
                 usuario.nombre,
                 usuario.primer_apellido,
-                usuario.segundo_apellido
+                usuario.segundo_apellido,
+                rif_juridico
             ],
             (error, results) => {
                 if (error) {
@@ -266,12 +344,12 @@ const updatePersonaContacto = async(usuario) =>{
     })
 }
 
-const deletePersonaContacto= async(usuario) =>{
+const deletePersonaContacto= async(rif_juridico) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'DELETE FROM "PERSONA_CONTACTO" WHERE fk_juridico= $1',
             [
-                usuario.rif_juridico
+                rif_juridico
             ],
             (error, results) => {
               if (error) {
@@ -357,73 +435,89 @@ const deleteTelefono = async(usuarioID, tipo) =>{
     })
 }
 
-const readTelefonoPersonaContacto = async(usuarioID) =>{
+const readHorario = async(horario_id) => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * "TELEFONO" fk_persona_contacto=$1',
+            'SELECT * FROM "HORARIO" where horario_id=$1',
             [
-                usuarioID
+                horario_id
             ],
-            (error, results) => {
-              if (error) {
-                reject(error)
-              }
-              resolve(results.rowCount)
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
             }
         )
     })
 }
 
-const insertTelefonoPersonaContacto = async(telefono, prefijo_telefono, usuarioID) =>{
-    return new Promise((resolve, reject) =>{
+const readHorarioSinId = async(horario) =>{
+    return new Promise((resolve, reject)=>{
         pool.query(
-            'INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_persona_contacto) VALUES ($1, $2, $3)',
+            'SELECT horario_id FROM "HORARIO" WHERE hora_inicio=$1 AND hora_fin=$2 AND dia=$3',
             [
-                telefono,
-                prefijo_telefono,
-                usuarioID
+                horario.hora_inicio,
+                horario.hora_fin,
+                horario.dia
             ],
-            (error, results) => {
-              if (error) {
-                reject(error)
-              }
-              resolve(results.rowCount)
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
             }
         )
     })
 }
 
-const updateTelefonoPersonaContacto = async(telefono, prefijo_telefono, usuarioID) =>{
+const readEmpleadoHorario = async(rif) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "TELEFONO" SET numero_telefono=$1, prefijo=$2 WHERE fk_persona_contacto=$3',
+            'SELECT * FROM "EMPLEADO_HORARIO" where fk_empleado=$1',
             [
-                telefono,
-                prefijo_telefono,
-                usuarioID
+                rif
             ],
-            (error, results) => {
-              if (error) {
-                reject(error)
-              }
-              resolve(results)
+            (error, results) =>{
+                if (error){
+                    reject(error)
+                }
+                resolve(results.rows)
             }
         )
     })
 }
 
-const deleteTelefonoPersonaContacto = async(usuarioID) =>{
+const insertEmpleadoHorario = async(rif, horario_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'DELETE FROM "TELEFONO" WHERE fk_persona_contacto=$3',
+            'INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
             [
-                usuarioID
+                rif,
+                horario_id
             ],
-            (error, results) => {
-              if (error) {
-                reject(error)
-              }
-              resolve(results)
+            (error, results) =>{
+                if (error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteEmpleadoHorario = async(rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "EMPLEADO_HORARIO" where fk_empleado=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if (error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
             }
         )
     })
@@ -441,16 +535,25 @@ module.exports = {
     readPersonaContacto: readPersonaContacto,
     deletePersonaContacto: deletePersonaContacto,
     updatePersonaContacto: updatePersonaContacto,
+    insertUsuarioJuridico: insertUsuarioJuridico,
+    updateUsuarioJuridico: updateUsuarioJuridico,
+    deleteUsuarioJuridico: deleteUsuarioJuridico,
+    insertUsuarioEmpleado: insertUsuarioEmpleado,
+    updateUsuarioEmpleado: updateUsuarioEmpleado,
+    deleteUsuarioEmpleado: deleteUsuarioEmpleado,
     //telefono
     insertTelefono: insertTelefono,
     updateTelefono: updateTelefono,
     readCelular: readCelular,
     readTelefono: readTelefono,
     deleteTelefono: deleteTelefono,
-    insertTelefonoPersonaContacto: insertTelefonoPersonaContacto,
-    readTelefonoPersonaContacto: readTelefonoPersonaContacto,
-    deleteTelefonoPersonaContacto: deleteTelefonoPersonaContacto,
-    updateTelefonoPersonaContacto: updateTelefonoPersonaContacto,
     //Lugar
-    readLugar: readLugar
+    readLugar: readLugar,
+    //empleadoHorario
+    readEmpleadoHorario: readEmpleadoHorario,
+    deleteEmpleadoHorario: deleteEmpleadoHorario,
+    insertEmpleadoHorario: insertEmpleadoHorario,
+    //horario
+    readHorario: readHorario,
+    readHorarioSinId: readHorarioSinId
 }

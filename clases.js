@@ -2,12 +2,24 @@ const { pool } = require("./config");
 const {
     insertUsuarioNatural, updateUsuarioNatural, deleteUsuarioNatural, readUsuario, readUsuarioLogin,
     insertPersonaContacto, updatePersonaContacto, deletePersonaContacto, readPersonaContacto,
+    insertUsuarioJuridico, updateUsuarioJuridico, deleteUsuarioJuridico,
+    insertUsuarioEmpleado, updateUsuarioEmpleado, deleteUsuarioEmpleado,
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
-    insertTelefonoPersonaContacto, readTelefonoPersonaContacto, updateTelefonoPersonaContacto, deleteTelefonoPersonaContacto,
+    insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
+    readHorario, readHorarioSinId,
     readLugar
     } = require('./queries')
 
 class Validador{
+    hora(horario){
+        const rangoHora = /^([1][0-9]|[0][9]|2[0-1]):(00)$/
+        if(horario.match(rangoHora) != undefined){
+            return true
+        }
+        else{
+            return false
+        }
+       }
     telefono(telefono){
         if(telefono.length == 7){
             return true
@@ -177,7 +189,7 @@ class ValidadorUsuario extends Validador{
                 }
             case 14:
                 if(this.campoVacio(usuarioNatural.primer_nombre) && this.campoVacio(usuarioNatural.primer_apellido) && this.contrasena(usuarioNatural.contrasena) 
-                && this.correo(usuarioNatural.correo_electronico) && this.rif(usuarioNatural.rif)){
+                && this.correo(usuarioNatural.correo_Empleadonico) && this.rif(usuarioNatural.rif)){
                     return true
                 }
                 else{
@@ -185,6 +197,28 @@ class ValidadorUsuario extends Validador{
                 }
         }
     }
+    Empleado(usuarioEmpleado){
+        switch(Object.keys(usuarioEmpleado).length){
+            case 17:
+                if(this.campoVacio(usuarioEmpleado.primer_nombre) && this.campoVacio(usuarioEmpleado.primer_apellido) && this.campoVacio(usuarioEmpleado.cedula) 
+                && this.tipo_cedula(usuarioEmpleado.tipo_cedula) && this.contrasena(usuarioEmpleado.contrasena) 
+                && this.correo(usuarioEmpleado.correo_electronico) && this.rif(usuarioEmpleado.rif)){
+                    return true
+                }
+                else{
+                    return false
+                }
+            case 15:
+                if(this.campoVacio(usuarioEmpleado.primer_nombre) && this.campoVacio(usuarioEmpleado.primer_apellido) && this.contrasena(usuarioEmpleado.contrasena) 
+                && this.correo(usuarioEmpleado.correo_electronico) && this.rif(usuarioEmpleado.rif)){
+                    return true
+                }
+                else{
+                    return false
+                }
+        }
+    }
+
     Juridico(usuarioJuridico){
         if(this.campoVacio(usuarioJuridico.denominacion_comercial) && this.campoVacio(usuarioJuridico.razon_social) && 
         this.pagina_web(usuarioJuridico.pagina_web) && this.campoVacio(usuarioJuridico.capital_disponible) && this.contrasena(usuarioJuridico.contrasena)){
@@ -223,6 +257,104 @@ class ValidadorUsuario extends Validador{
 }
 
 validador = new Validador()
+
+class Contenedor{
+    constructor(rif){
+        this.rif = rif
+        this.contenedor = []
+    }
+    async buscarHorarioEmpleado(){
+        let horario = await readEmpleadoHorario(this.rif)
+        if(horario != null && horario != undefined && Object.keys(horario).length != 0){
+            for(var i=0; i<Object.keys(horario).length; i++){
+                this.contenedor.push(await (new Horario(horario[i].fk_horario)).buscarHorario())
+            }
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    async ordenarHorario(horario){
+        var obj = JSON.parse(horario)
+        if(Object.keys(obj).length > 0){
+            for(let i=0; i<Object.keys(obj).length; i++){
+                if(validador.hora(obj[i].hora_inicio) && validador.hora(obj[i].hora_fin)){
+                    this.contenedor.push(await (new Horario('', obj[i].dia, obj[i].hora_inicio, obj[i].hora_fin,)).buscarHorarioSinId())
+                }
+            }
+            return true
+        }
+        else{
+            return false
+        }
+    }
+}
+
+class Horario{
+    constructor(id, dia, hora_inicio, hora_fin){
+        this.id = id
+        this.dia = dia
+        this.hora_inicio = hora_inicio
+        this.hora_fin = hora_fin
+    }
+    async buscarHorario(){
+        let horaRegistrada = (await readHorario(this.id))[0]
+        this.dia = horaRegistrada.dia
+        this.hora_inicio = horaRegistrada.hora_inicio
+        this.hora_fin = horaRegistrada.hora_fin
+        return this
+    }
+
+    async buscarHorarioSinId(){
+        let horaRegistrada = (await readHorarioSinId(this))[0]
+        this.id = horaRegistrada.horario_id
+        return this
+    }
+
+    async insertarEmpleadoHorario(rif, horarios){
+        if(horarios.length > 0){
+            var contador = 0
+            for(var i=0; i<horarios.length;i++){
+                contador+=(await insertEmpleadoHorario(rif, horarios[i].id))                  
+            }
+            if(contador == horarios.length){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+
+    async actualizarHorario(rif, horarios){
+        if((await readEmpleadoHorario(rif)).length > 0){
+            if(this.eliminarHorario(rif)){
+                if(this.insertarEmpleadoHorario(rif, horarios)){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
+        }
+    }
+
+    async eliminarHorario(rif){
+        if(await deleteEmpleadoHorario(rif) > 0){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+}
 
 class Lugar{
     constructor(parroquia, municipio, estado){
@@ -468,7 +600,6 @@ class Juridico extends Usuario{
             this.telefono
             this.persona_contacto
     }
-
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
         if(Object.keys(usuario).length == 8){
@@ -496,7 +627,52 @@ class Juridico extends Usuario{
     async insertarUsuario(){
         if (this != undefined && !(await validador.existeCorreo(this.correo_electronico, this.tipo_usuario_tabla)) && 
         !(await validador.existeRif(this.rif, this.tipo_usuario_tabla)) && (await validador.existeLugar(this.lugar)>0)){
-
+            if(await insertUsuarioJuridico(this) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+    }
+    async actualizarUsuario(){
+        if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla)) && (await validador.existeLugar(this.lugar) > 0)){
+            let usuario = (await readUsuario(this.rif, this.tipo_usuario_tabla))[0]
+            if(usuario.correo_electronico == this.correo_electronico){
+                if(await updateUsuarioJuridico(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else if (!(await validador.existeCorreo(this.correo_electronico, this.tipo_usuario_tabla))){
+                if(await updateUsuarioJuridico(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarUsuario(){
+        if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla))){
+            if(await deleteUsuarioJuridico(this) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
         }
     }
 }
@@ -510,6 +686,10 @@ class PersonaContacto{
             this.tipo_usuario = 'persona_contacto'
             this.telefono
         }
+    async idPersona(rif_juridico){
+        this.id = (await readPersonaContacto(rif_juridico))[0].persona_id
+    }
+    
     async personaExiste(rif_juridico){
         let usuario = (await readPersonaContacto(rif_juridico))[0]
         if(Object.keys(usuario).length == 5){
@@ -529,13 +709,154 @@ class PersonaContacto{
             return false
         }
     }
+    async insertarPersonaContacto(rif_juridico){
+        let UsuarioPersonaContacto = (await readPersonaContacto(rif_juridico))[0]
+        if(UsuarioPersonaContacto == undefined || UsuarioPersonaContacto == null){
+            if(await insertPersonaContacto(this, rif_juridico) == 1){
+                await this.idPersona(rif_juridico)
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async actualizarPersonaContacto(rif_juridico){
+        if (this != undefined){
+            let personaContacto = (await readPersonaContacto(rif_juridico))[0]
+            if(Object.keys(personaContacto).length == 5){
+                this.idPersona(rif_juridico)
+                if(await updatePersonaContacto(this, rif_juridico) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarPersonaContacto(rif_juridico){
+        if (this != undefined){
+            if(await deletePersonaContacto(rif_juridico) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
 }
 
-class Empleado extends Natural{
-    constructor(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula, fecha_ingreso, fecha_egreso){
-        super(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula)
-        this.fecha_ingreso = fecha_ingreso
-        this.fecha_egreso = fecha_egreso
+class Empleado extends Usuario{
+    constructor(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula){
+        super(rif, correo_electronico, contrasena)
+        this.primer_nombre = primer_nombre
+        this.segundo_nombre = segundo_nombre
+        this.primer_apellido = primer_apellido
+        this.segundo_apellido = segundo_apellido
+        this.cedula = cedula
+        this.tipo_cedula = tipo_cedula
+        this.fecha_ingreso
+        this.fecha_egreso
+        this.tipo_usuario = 'empleado'
+        this.tipo_usuario_tabla = '\"EMPLEADO\"'
+        this.lugar
+        this.telefono
+        this.horario
+    }
+    async usuarioExiste(){
+        let usuario = await super.usuarioExiste()
+        if(Object.keys(usuario).length == 13){
+            this.primer_nombre = usuario.primer_nombre
+            this.segundo_nombre = usuario.segundo_nombre
+            this.primer_apellido = usuario.primer_apellido
+            this.segundo_apellido = usuario.segundo_apellido
+            this.cedula = usuario.cedula_identidad
+            this.tipo_cedula = usuario.tipo_cedula
+            this.correo_electronico = usuario.correo_electronico
+            this.contrasena = usuario.contrasena
+            this.fecha_ingreso = usuario.fecha_ingreso
+            this.fecha_egreso = usuario.fecha_egreso
+            this.lugar = new Lugar()
+            this.telefono = new Telefono()
+            this.horario = []
+            if((await this.lugar.buscarLugar(usuario.fk_lugar)) && (await this.telefono.buscarTelefono(this.rif, this.tipo_usuario) &&
+            (await this.telefono.buscarCelular(this.rif, this.tipo_usuario)))){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async insertarUsuario(){
+        if (this != undefined && !(await validador.existeCorreo(this.correo_electronico, this.tipo_usuario_tabla)) && 
+        !(await validador.existeRif(this.rif, this.tipo_usuario_tabla)) && (await validador.existeLugar(this.lugar)>0)){
+            if(await insertUsuarioEmpleado(this) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async actualizarUsuario(){
+        if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla)) && (await validador.existeLugar(this.lugar) > 0)){
+            let usuario = (await readUsuario(this.rif, this.tipo_usuario_tabla))[0]
+            if(usuario.correo_electronico == this.correo_electronico){
+                if(await updateUsuarioEmpleado(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else if (!(await validador.existeCorreo(this.correo_electronico, this.tipo_usuario_tabla))){
+                if(await updateUsuarioEmpleado(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarUsuario(){
+        if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla))){
+            if(await deleteUsuarioEmpleado(this) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
     }
 }
 
@@ -546,3 +867,6 @@ exports.Lugar = Lugar
 exports.Telefono = Telefono
 exports.Login = Login
 exports.Juridico = Juridico
+exports.PersonaContacto = PersonaContacto
+exports.Contenedor = Contenedor
+exports.Horario = Horario
