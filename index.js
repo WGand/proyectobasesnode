@@ -234,19 +234,6 @@ const postLugarParroquia = async (request, response) => {
   )
 }
 
-const existeLugar = async (numero) => {
-  pool.query(
-    'SELECT * FROM "LUGAR" WHERE lugar_id = $1',
-    [numero],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      return results.rowCount
-    }
-  );
-}
-
 const postEspecificoLugar = async (request, response) => {
   const { tipo_lugar, lugar, estado } = request.body;
   switch (tipo_lugar) {
@@ -504,195 +491,6 @@ const postUsuario = async (request, response) => {
       }
     )
   }
-}
-
-function ordenarTelefonos(telefonos){
-  var data = []
-  if(telefonos[0]['prefijo'] == ('0414' || '0416' || '0412' || '0424' || '0426')){
-    data[0]={['prefijo_celular']:telefonos[0]['prefijo']}
-    data[0]['celular'] = telefonos[0]['numero_telefonico']
-    data[0]['prefijo_telefono'] = telefonos[1]['prefijo']
-    data[0]['telefono'] = telefonos[1]['numero_telefonico']
-  }
-  else{
-    data[0]={['prefijo_celular']:telefonos[1]['prefijo']}
-    data[0]['celular'] = telefonos[1]['numero_telefonico']
-    data[0]['prefijo_telefono'] = telefonos[0]['prefijo']
-    data[0]['telefono'] = telefonos[0]['numero_telefonico']
-  }
-  return data
-}
-
-const actualizarTelefono = async (celular, telefono, prefijo, prefijo_celular, rif, tipo) =>{
-  switch(tipo){
-    case 'natural':
-      pool.query(
-        'SELECT * FROM "TELEFONO" WHERE fk_natural = $1',
-        [rif],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          telefonos = results.rows
-          data = ordenarTelefonos(telefonos)
-          pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_natural=$4 AND prefijo=$3',
-          [celular, prefijo_celular, data[0]['prefijo_celular'], rif],
-          (error, results) => {
-            if (error){
-              throw error;
-            }
-            pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_natural=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
-            (error, results) => {
-              if (error){
-                throw error;
-              }
-            }
-            )
-          }
-          )
-        }
-      )
-      break
-    case 'juridico':
-      pool.query(
-        'SELECT * FROM "TELEFONO" WHERE fk_juridico = $1',
-        [rif],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          telefonos = results.rows
-          data = ordenarTelefonos(telefonos)
-          pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_juridico=$4 AND prefijo=$3',
-          [celular, prefijo_celular, data[0]['prefijo_celular'], rif],
-          (error, results) => {
-            if (error){
-              throw error;
-            }
-            pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_juridico=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
-            (error, results) => {
-              if (error){
-                throw error;
-              }
-            }
-            )
-          }
-          )
-        }
-      )
-      break
-    case 'empleado':
-      pool.query(
-        'SELECT * FROM "TELEFONO" WHERE fk_empleado = $1',
-        [rif],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          telefonos = results.rows
-          data = ordenarTelefonos(telefonos)
-          pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_empleado=$4 AND prefijo=$3',
-          [celular, prefijo_celular, data[0]['prefijo_celular'], rif],
-          (error, results) => {
-            if (error){
-              throw error;
-            }
-            pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_empleado=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
-            (error, results) => {
-              if (error){
-                throw error;
-              }
-            }
-            )
-          }
-          )
-        }
-      )
-      break
-    case 'persona_contacto':
-      pool.query(
-        'SELECT * FROM "TELEFONO" WHERE fk_persona_contacto = $1',
-        [rif],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          telefonos = results.rows
-          data = ordenarTelefonos(telefonos)
-          pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_persona_contacto=$4 AND prefijo=$3',
-          [celular, prefijo_celular, data[0]['prefijo_celular'], rif],
-          (error, results) => {
-            if (error){
-              throw error;
-            }
-            pool.query('UPDATE "TELEFONO" SET numero_telefonico=$1, prefijo=$2 WHERE fk_persona_contacto=$4 AND prefijo=$3',
-            [telefono, prefijo, data[0]['prefijo_telefono'], rif],
-            (error, results) => {
-              if (error){
-                throw error;
-              }
-            }
-            )
-          }
-          )
-        }
-      )
-      break
-  }
-
-}
-
-const registrarTelefono = async (celular, prefijo_celular, rif, tipo) =>{
-  switch(tipo){
-    case 'natural':
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_natural) VALUES ($1, $2, $3)',
-      [celular, prefijo_celular, rif],
-      (error, results) => {
-        if (error){
-          throw error;
-        }
-        return results
-      }
-      )
-      break
-    case 'juridico':
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_juridico) VALUES ($1, $2, $3)',
-      [celular, prefijo_celular, rif],
-      (error, results) => {
-        if (error){
-          throw error;
-        }
-        return results
-      }
-      )
-      break
-    case 'empleado':
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_empleado) VALUES ($1, $2, $3)',
-      [celular, prefijo_celular, rif],
-      (error, results) => {
-        if (error){
-          throw error;
-        }
-        return results
-      }
-      )
-      break
-    case 'persona_contacto':
-      pool.query('INSERT INTO "TELEFONO" (numero_telefonico, prefijo, fk_persona_contacto) VALUES ($1, $2, $3)',
-      [celular, prefijo_celular, rif],
-      (error, results) => {
-        if (error){
-          throw error;
-        }
-        return results
-      }
-      )
-      break
-  }
-
 }
 
 const buscarLugar = async (request, response) => {
@@ -1267,55 +1065,6 @@ const getTodos = async (request, response) => {
   )
 }
 
-const borrarTelefono = async(ID, tipo) =>{
-  switch(tipo){
-    case 'natural':
-      pool.query(
-        'DELETE FROM "TELEFONO" WHERE fk_natural = $1',
-        [ID],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-        }
-      )
-      break
-    case 'juridico':
-      pool.query(
-        'DELETE FROM "TELEFONO" WHERE fk_juridico = $1',
-        [ID],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-        }
-      )
-      break
-    case 'persona_contacto':
-      pool.query(
-        'DELETE FROM "TELEFONO" WHERE fk_persona_contacto = $1',
-        [ID],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-        }
-      )
-      break
-    case 'empleado':
-      pool.query(
-        'DELETE FROM "TELEFONO" WHERE fk_empleado = $1',
-        [ID],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-        }
-      )
-      break
-  }
-}
-
 const postTienda = async (request, response) =>{
   const{
     nombre,
@@ -1758,6 +1507,23 @@ const postpruebaprueba = async(request, response) => {
   }
 }
 
+app
+  .route("/usuarioNatural")
+  .post(postNatural)
+  .put(updateNatural)
+  .delete(deleteNatural)
+app
+  .route("/usuarioJuridico")
+  .post(postJuridico)
+  .put(updateJuridico)
+  .delete(deleteJuridico)
+
+  app
+  .route("/empleado")
+  .post(postEmpleado)
+  .put(updateEmpleado)
+  .delete(deleteEmpleado)
+
 app .route("/pruebaprueba")
     .post(postpruebaprueba)
 
@@ -1807,12 +1573,6 @@ app
   .post(postHorario)
 
 app
-  .route("/empleado")
-  .post(postEmpleado)
-  .put(updateEmpleado)
-  .delete(deleteEmpleado)
-
-app
   .route("/buscarLugar")
   .post(buscarLugar)
 
@@ -1833,16 +1593,6 @@ app
   .route("/login")
   .post(postUsuario)
   .get(getTodos)
-app
-  .route("/usuarioNatural")
-  .post(postNatural)
-  .put(updateNatural)
-  .delete(deleteNatural)
-app
-  .route("/usuarioJuridico")
-  .post(postJuridico)
-  .put(updateJuridico)
-  .delete(deleteJuridico)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -130,7 +130,7 @@ const insertUsuarioJuridico = async(usuario) =>{
             [
                 usuario.rif,
                 usuario.correo_electronico,
-                usuario.denominacion_social,
+                usuario.denominacion_comercial,
                 usuario.razon_social,
                 usuario.pagina_web,
                 usuario.capital_disponible,
