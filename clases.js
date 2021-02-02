@@ -860,6 +860,26 @@ class Empleado extends Usuario{
     }
 }
 
+class TipoPago{
+    constructor(fecha){
+        this.fecha = fecha
+    }
+}
+
+class Tarjeta extends TipoPago{
+    constructor(fecha, numero_tarjeta, empresa, mes_caducidad, anho_caducidad, nombre_tarjeta, tipo){
+        super()
+        this.fecha = fecha
+        this.numero_tarjeta = numero_tarjeta
+        this.empresa = empresa
+        this.mes_caducidad = mes_caducidad
+        this.anho_caducidad = anho_caducidad
+        this.nombre_tarjeta = nombre_tarjeta
+        this.tipo = tipo
+    }
+    
+}
+
 exports.ValidadorUsuario = ValidadorUsuario
 exports.Empleado = Empleado
 exports.Natural = Natural

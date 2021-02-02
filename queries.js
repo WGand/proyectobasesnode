@@ -509,12 +509,53 @@ const insertEmpleadoHorario = async(rif, horario_id) =>{
 const deleteEmpleadoHorario = async(rif) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'DELETE FROM "EMPLEADO_HORARIO" where fk_empleado=$1',
+            'DELETE FROM "EMPLEADO_HORARIO" WHERE fk_empleado=$1',
             [
                 rif
             ],
             (error, results) =>{
                 if (error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readTarjeta = async(rif, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "TARJETA" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const inserTarjeta = async(tarjeta, rif, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "TARJETA" (numero_tarjeta, empresa, fecha, mes_caducidad, anho_caducidad, nombre_tarjeta, fk_'+tipo+') VALUES '+
+            '($1, $2, $3, $4, $5, $6, $7)',
+            [
+                tarjeta.numero_tarjeta,
+                tarjeta.empresa,
+                tarjeta.fecha,
+                tarjeta.mes_caducidad,
+                tarjeta.anho_caducidad,
+                tarjeta.nombre_tarjeta,
+                rif
+            ],
+            (error, results) =>{
+                if(error){
                     reject(error)
                 }
                 resolve(results.rowCount)
