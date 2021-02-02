@@ -540,7 +540,7 @@ const readTarjeta = async(rif, tipo) =>{
     })
 }
 
-const inserTarjeta = async(tarjeta, rif, tipo) =>{
+const insertTarjeta = async(tarjeta, rif, tipo) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'INSERT INTO "TARJETA" (numero_tarjeta, empresa, fecha, mes_caducidad, anho_caducidad, nombre_tarjeta, fk_'+tipo+') VALUES '+
@@ -570,6 +570,331 @@ const deleteTarjeta = async(rif, tipo) =>{
             'DELETE FROM "TARJETA" WHERE fk_'+tipo+'=$1',
             [
                 rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readCheque = async(rif, tipo) =>{
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'SELECT * FROM "CHEQUE" WHERE rif=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertCheque = async(cheque, rif, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "CHEQUE" (numero_confirmacion, nombre_banco, fk_'+tipo+') VALUES ($1, $2, $3)',
+            [
+                cheque.numero_confirmacion,
+                cheque.nombre_banco,
+                rif
+            ],
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteCheque = async(rif, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "CHEQUE" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readCanje = async(rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "CANJE" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertCanje = async(canje, rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "CANJE" (cantidad, cambio, fk_'+tipo+') VALUES ($1, $2, $3)',
+            [
+                canje.cantidad,
+                canje.cambio,
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteCanje = async(rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "CANJE" WHERE fk_'+tipo+' =$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readPunto = async(rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "PUNTO" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertPunto = async(punto, rif, tipo) =>{
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'INSERT INTO "PUNTO" (cantidad, fk_'+tipo+') VALUES ($1, $2)',
+            [
+                punto.cantidad,
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updatePunto = async(punto, rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "PUNTO" SET cantidad=$1 WHERE fk_'+tipo+'=$2',
+            [
+                punto.cantidad,
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deletePunto = async(rif, tipo) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "PUNTO" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readHistoricoPunto = async() => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_PUNTO"',
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readHistoricoPuntoFecha = async(fecha) => {
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_PUNTO" WHERE fecha=$1',
+            [
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertHistoricoPunto = async(referencia_bolivares) => {
+    return new Promise((resolve, reject) => {
+        pool.query(
+            'INSERT INTO "HISTORICO_PUNTO" (references_bolivares) VALUES ($1)',
+            [
+                referencia_bolivares
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteHistoricoPunto = async(fecha) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "HISTORICO_PUNTO" WHERE fecha=$1',
+            [
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readHistoricoDivisa = async() => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_DIVISA"',
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readHistoricoDivisaFecha = async(fecha) => {
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_DIVISA" WHERE fecha=$1',
+            [
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readHistoricoDivisaTipo = async(fecha, tipo) => {
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_DIVISA" WHERE fecha=$1 AND tipo=$2',
+            [
+                fecha,
+                tipo
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertHistoricoDivisa = async(valor, tipo) => {
+    return new Promise((resolve, reject) => {
+        pool.query(
+            'INSERT INTO "HISTORICO_DIVISA" (valor, tipo) VALUES ($1, $2)',
+            [
+                valor,
+                tipo
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteHistoricoDivisa = async(fecha) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "HISTORICO_DIVISA" WHERE fecha=$1',
+            [
+                fecha
             ],
             (error, results) =>{
                 if(error){
@@ -616,6 +941,6 @@ module.exports = {
     readHorarioSinId: readHorarioSinId,
     //tarjeta
     readTarjeta: readTarjeta,
-    inserTarjeta: inserTarjeta,
+    insertTarjeta: insertTarjeta,
     deleteTarjeta: deleteTarjeta
 }

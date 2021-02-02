@@ -7,7 +7,7 @@ const {
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     readHorario, readHorarioSinId,
-    readTarjeta, inserTarjeta, deleteTarjeta,
+    readTarjeta, insertTarjeta, deleteTarjeta,
     readLugar
     } = require('./queries')
 
@@ -869,14 +869,81 @@ class TipoPago{
 
 class Tarjeta extends TipoPago{
     constructor(fecha, numero_tarjeta, empresa, mes_caducidad, anho_caducidad, nombre_tarjeta, tipo){
-        super()
-        this.fecha = fecha
+        super(fecha)
         this.numero_tarjeta = numero_tarjeta
         this.empresa = empresa
         this.mes_caducidad = mes_caducidad
         this.anho_caducidad = anho_caducidad
         this.nombre_tarjeta = nombre_tarjeta
         this.tipo = tipo
+    }
+    async insertarTarjeta(rif, tipo){
+        if(await insertTarjeta(this, rif, tipo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarTarjeta(rif, tipo){
+        if(await deleteTarjeta(rif, tipo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    async actualizarTarjeta(rif, tipo){
+        if(await eliminarTarjeta(rif, tipo)){
+            if(await this.insertarTarjeta(rif, tipo)){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+}
+
+class Cheque extends TipoPago{
+    constructor(fecha, numero_confirmacion, nombre_banco){
+        super(fecha)
+        this.numero_confirmacion = numero_confirmacion
+        this.nombre_banco = nombre_banco
+    }
+}
+
+class Canje extends TipoPago{
+    constructor(fecha, cantidad, cambio){
+        super(fecha)
+        this.cantidad = cantidad
+        this.cambio = cambio
+    }
+}
+
+class Moneda extends TipoPago{
+    constructor(fecha, tipo, cambio){
+        super(fecha)
+        this.tipo = tipo
+        this.cambio = cambio
+    }
+}
+
+class Punto{
+    constructor(cantidad){
+        cantidad = cantidad
+    }
+}
+
+class Operacion{
+    constructor(condiciones, fecha_orden, monto_total, fecha_entrega){
+        this.condiciones = condiciones
+        this.fecha_orden = fecha_orden
+        this.monto_total = monto_total
+        this.fecha_entrega = fecha_entrega
     }
 }
 

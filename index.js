@@ -1475,7 +1475,7 @@ const postProducto = async (request, response) => {
 
 const productosOrdenados = async(request, response) =>{
   pool.query(
-    'SELECT * FROM "PRODUCTO" ORDER BY nombre',
+    'SELECT producto_id AS id, imagen, nombre, precio, ucabmart, categoria FROM "PRODUCTO" ORDER BY nombre',
     (error, results) => {
       if (error) {
         throw error
