@@ -1605,6 +1605,7 @@ app
   .get(productosOrdenados)
   .post(postProducto)
   .delete(deleteProducto)
+  .put(updateProducto)
 
 app
   .route("/lugarparroquia")
