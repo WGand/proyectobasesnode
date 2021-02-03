@@ -974,7 +974,7 @@ const updateProducto = async(request, response) =>{
   } = request.body;
   let producto = new Producto(producto_id, imagen, nombre, precio, ucabmart, categoria)
   if(await producto.actualizarProducto()){
-    response.status(201).json({ status: "Funciono", message: "Registro exitoso" }))
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
     response.status(201).json([])
@@ -1549,8 +1549,9 @@ const postpruebaprueba = async(request, response) => {
 
   
 }
-app .route("/pruebaprueba")
-    .post(postpruebaprueba)
+app 
+  .route("/pruebaprueba")
+  .post(postpruebaprueba)
 
 app
   .route("/proveedor")
@@ -1569,25 +1570,29 @@ app
   .put(updateJuridico)
   .delete(deleteJuridico)
 
-  app
+app
   .route("/empleado")
   .post(postEmpleado)
   .put(updateEmpleado)
   .delete(deleteEmpleado)
 
-app .route("/carnet")
-    .post(imprimirCarnetUsuario)
+app 
+  .route("/carnet")
+  .post(imprimirCarnetUsuario)
 
-app .route("/reportehorario")
-    .get(reporteHorario)
+app 
+  .route("/reportehorario")
+  .get(reporteHorario)
 
-app .route("/Documento")
-    .post(subir)
-    .get(horarioEmpleados)
+app 
+  .route("/Documento")
+  .post(subir)
+  .get(horarioEmpleados)
 
-app .route("/inventario")
-    .get(getTienda)
-    .post(postInventario)
+app 
+  .route("/inventario")
+  .get(getTienda)
+  .post(postInventario)
 
 app
   .route("/tienda")
