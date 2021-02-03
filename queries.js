@@ -941,6 +941,87 @@ const deleteProveedor = async(proveedor) =>{
     })
 }
 
+const readProductoId = async(producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "PRODUCTO" where producto_id=$1',
+            [
+                producto.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readProductoSinId = async(producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT producto_id FROM "PRODUCTO" where imagen=$1 AND nombre=$2 AND precio=$3 AND ucabmart=$4 AND categoria=$5',
+            [
+                producto.imagen,
+                producto.nombre,
+                producto.precio,
+                producto.ucabmart,
+                producto.categoria
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertProducto = async(producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "PRODUCTO" (imagen, nombre, precio, ucabmart, categoria) VALUES ($1, $2, $3, $4, $5)',
+            [
+                producto.imagen,
+                producto.nombre,
+                producto.precio,
+                producto.ucabmart,
+                producto.categoria
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateProducto = async(producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "PRODUCTO" SET imagen=$1, nombre=$2, precio=$3, ucabmart=$4, categoria=$5 WHERE producto_id=$5',
+            [
+                producto.imagen,
+                producto.nombre,
+                producto.precio,
+                producto.ucabmart,
+                producto.categoria,
+                producto.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto

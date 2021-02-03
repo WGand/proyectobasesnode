@@ -971,6 +971,20 @@ class Operacion{
     }
 }
 
+class Producto{
+    constructor(id, imagen, nombre, precio, ucabmart, categoria){
+        this.id = id
+        this.imagen = imagen
+        this.nombre = nombre
+        this.precio = precio
+        this.ucabmart = ucabmart
+        this.categoria = categoria
+    }
+    async insertarProducto(){
+        
+    }
+}
+
 exports.ValidadorUsuario = ValidadorUsuario
 exports.Empleado = Empleado
 exports.Natural = Natural

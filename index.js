@@ -1561,7 +1561,7 @@ app
   .route("/proveedor")
   .post(postProveedor)
   .put(postProveedor)
-  .delete(postProveedor)
+  .delete(deleteProveedor)
 
 app
   .route("/usuarioNatural")
