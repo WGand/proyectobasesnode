@@ -1560,7 +1560,7 @@ const postpruebaprueba = async(request, response) => {
 app
   .route("/proveedor")
   .post(postProveedor)
-  .update(postProveedor)
+  .put(postProveedor)
   .delete(postProveedor)
 
 app
