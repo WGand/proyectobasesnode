@@ -889,6 +889,56 @@ const deleteEmpleado = async (request, response) => {
   }
 }
 
+const postProveedor = async (request, response) => {
+  const
+  {
+    rif,
+    rubro
+  } = request.body
+  let usuario = new Juridico(rif)
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    if(await usuario.usuarioExiste()){
+      usuario.rubro = rubro
+      if(await usuario.insertarProveedor()){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const deleteProveedor = async (request, response) =>{
+  const 
+  { 
+    rif
+  } = request.body;
+  let usuario = new Juridico(rif)
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    if(await usuario.usuarioExiste()){
+      if(await usuario.eliminarProveedor()){
+        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+      }
+      else{
+        response.status(201).json([])
+      }
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postValidarRif = async(request, response) =>{
   const{
     rif,
@@ -1486,27 +1536,32 @@ const productosOrdenados = async(request, response) =>{
 }
 
 const postpruebaprueba = async(request, response) => {
-  const { rif } = request.body;
-  let usuario = new Empleado(rif)
-  let horario = new Horario()
-  await usuario.usuarioExiste()
-  if(usuario != null && usuario != undefined){
-    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario) && await horario.eliminarHorario(rif)){
-      if(await usuario.eliminarUsuario()){
-        response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  const { rif, rubro } = request.body;
+  let usuario = new Juridico(rif)
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    if(await usuario.usuarioExiste()){
+      usuario.rubro = rubro
+      if(await usuario.eliminarProveedor()){
+        console.log('todo bien')
       }
       else{
-        response.status(201).json([])
+        console.log('todo mal 1')
       }
     }
     else{
-      response.status(201).json([])
+      console.log('todo mal 2')
     }
   }
   else{
-    response.status(201).json([])
+    console.log('todo mal 3')
   }
 }
+
+app
+  .route("/proveedor")
+  .post(postProveedor)
+  .update(postProveedor)
+  .delete(postProveedor)
 
 app
   .route("/usuarioNatural")

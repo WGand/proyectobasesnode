@@ -906,6 +906,41 @@ const deleteHistoricoDivisa = async(fecha) => {
     })
 }
 
+const insertProveedor = async(proveedor) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "JURIDICO" SET rubro=$1 WHERE rif=$2',
+            [
+                proveedor.rubro,
+                proveedor.rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteProveedor = async(proveedor) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "JURIDICO" SET rubro=NULL WHERE rif=$1',
+            [
+                proveedor.rif
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto
@@ -942,5 +977,8 @@ module.exports = {
     //tarjeta
     readTarjeta: readTarjeta,
     insertTarjeta: insertTarjeta,
-    deleteTarjeta: deleteTarjeta
+    deleteTarjeta: deleteTarjeta,
+    //proveedor
+    insertProveedor: insertProveedor,
+    deleteProveedor: deleteProveedor
 }

@@ -8,6 +8,7 @@ const {
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
+    insertProveedor, deleteProveedor,
     readLugar
     } = require('./queries')
 
@@ -600,10 +601,11 @@ class Juridico extends Usuario{
             this.lugar
             this.telefono
             this.persona_contacto
+            this.rubro
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 8){
+        if(Object.keys(usuario).length == 9){
             this.denominacion_comercial = usuario.denominacion_comercial
             this.correo_electronico = usuario.correo_electronico
             this.contrasena = usuario.contrasena
@@ -676,7 +678,29 @@ class Juridico extends Usuario{
             return false
         }
     }
+    async insertarProveedor(){
+        if(this.rubro != null && this.rubro != undefined && this.rubro != ''){
+            if(await insertProveedor(this) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarProveedor(){
+        if(await deleteProveedor(this) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
 }
+
 
 class PersonaContacto{
     constructor(nombre, primer_apellido,segundo_apellido){
