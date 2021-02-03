@@ -963,6 +963,19 @@ const postProducto = async (request, response) => {
   }
 }
 
+const deleteProducto = async(request, response) =>{
+  const {
+    producto_id
+  } = request.body;
+  let producto = new Producto(producto_id)
+  if(producto.eliminarProducto()){
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postValidarRif = async(request, response) =>{
   const{
     rif,
@@ -1504,20 +1517,12 @@ const productosOrdenados = async(request, response) =>{
 
 const postpruebaprueba = async(request, response) => {
   const {
-    rif, 
-    imagen,
-    nombre,
-    precio,
-    ucabmart,
-    categoria
+    producto_id
   } = request.body;
-  let usuario = new Juridico(rif)
-  let producto = new Producto('', imagen, nombre, precio, ucabmart, categoria)
-  if(await usuario.usuarioExiste()){
-    if(await producto.insertarProducto(rif)){
-      console.log('esta bien')
-    }
-  }
+  let producto = new Producto(producto_id)
+  producto.eliminarProducto()
+  console.log('todo bien')
+  
 }
 app .route("/pruebaprueba")
     .post(postpruebaprueba)
@@ -1569,6 +1574,7 @@ app
   .route("/producto")
   .get(productosOrdenados)
   .post(postProducto)
+  .delete(deleteProducto)
 
 app
   .route("/lugarparroquia")

@@ -1092,13 +1092,29 @@ const insertJuridicoProducto = async(rif, producto_id) =>{
     })
 }
 
-const deleteJuridicoProducto = async(rif, producto_id) =>{
+const deleteJuridicoProductoPID = async(producto_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'DELETE FROM "JURIDICO_PRODUCTO" WHERE fk_juridico=$1 AND fk_producto=$2',
+            'DELETE FROM "JURIDICO_PRODUCTO" WHERE fk_producto=$1',
             [
-                rif,
                 producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteJuridicoProductoRIF = async(rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "JURIDICO_PRODUCTO" WHERE fk_juridico=$1',
+            [
+                rif
             ],
             (error, results) =>{
                 if(error){
@@ -1160,5 +1176,6 @@ module.exports = {
     readJuridicoProductoPID: readJuridicoProductoPID,
     readJuridicoProductoRIF: readJuridicoProductoRIF,
     insertJuridicoProducto: insertJuridicoProducto,
-    deleteJuridicoProducto: deleteJuridicoProducto
+    deleteJuridicoProductoPID: deleteJuridicoProductoPID,
+    deleteJuridicoProductoRIF: deleteJuridicoProductoRIF
 }

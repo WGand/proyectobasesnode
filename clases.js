@@ -7,7 +7,7 @@ const {
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     insertProducto, readProductoId, readProductoSinId, updateProducto, deleteProducto,
-    readJuridicoProductoPID, readJuridicoProductoRIF, insertJuridicoProducto, deleteJuridicoProducto,
+    readJuridicoProductoPID, readJuridicoProductoRIF, insertJuridicoProducto, deleteJuridicoProductoPID, deleteJuridicoProductoRIF,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
     insertProveedor, deleteProveedor,
@@ -996,7 +996,6 @@ class Producto{
             return null
         }
     }
-
     async buscarProductoSinId(){
         let producto = (await readProductoSinId(this))[0]
         if(Object.keys(producto).length > 0){
@@ -1007,7 +1006,6 @@ class Producto{
             return null
         }
     }
-
     async insertarProducto(rif){
         if(await insertProducto(this) == 1){
             await this.buscarProductoSinId()
@@ -1025,6 +1023,37 @@ class Producto{
     async actualizarProducto(){
         if(await updateProducto(this) ==1){
             return true
+        }
+        else{
+            return false
+        }
+    }
+    async eliminarProducto(rif){
+        if(this.id != undefined && this.id != null && this.id != ''){
+            if(await deleteJuridicoProductoPID(this.id) == 1){
+                if(await deleteProducto(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
+        }
+        else if(rif != undefined && rif != null && rif != '' && validador.existeRif(rif, '\"JURIDICO\"')){
+            if(await deleteJuridicoProductoRIF(rif) == 1){
+                if(await deleteProducto(this) == 1){
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            else{
+                return false
+            }
         }
         else{
             return false
