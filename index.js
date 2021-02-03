@@ -6,7 +6,7 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
-const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico, PersonaContacto, Contenedor, Horario} = require('./clases')
+const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico, PersonaContacto, Contenedor, Horario, Producto} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -939,6 +939,30 @@ const deleteProveedor = async (request, response) =>{
   }
 }
 
+const postProducto = async (request, response) => {
+  const {
+    rif, 
+    imagen,
+    nombre,
+    precio,
+    ucabmart,
+    categoria
+  } = request.body;
+  let usuario = new Juridico(rif)
+  let producto = new Producto('', imagen, nombre, precio, ucabmart, categoria)
+  if(await usuario.usuarioExiste()){
+    if(await producto.insertarProducto(rif)){
+      response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postValidarRif = async(request, response) =>{
   const{
     rif,
@@ -1464,65 +1488,6 @@ const postInventario = async (request, response) =>{
   }
 }
 
-const postProducto = async (request, response) => {
-  const {
-    imagen,
-    nombre,
-    precio,
-    UCABMART,
-    categoria
-  } = request.body
-  var producto_id
-  pool.query(
-    'INSERT INTO "PRODUCTO" (imagen, nombre, precio, UCABMART, categoria) VALUES ($1, $2, $3, $4, $5) RETURNING producto_id',
-    [
-      imagen,
-      nombre,
-      precio,
-      UCABMART,
-      categoria
-    ],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      producto_id = results.rows[0]['producto_id']
-      pool.query(
-        'SELECT tienda_id FROM "TIENDA"',
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount>0){
-            for(i = 0; i< results.rowCount; i++){
-              if(results.rows[i]['tienda_id'] != undefined){
-                pool.query(
-                  'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3, $4)',
-                  [
-                    'f',
-                    100,
-                    results.rows[i]['tienda_id'],
-                    producto_id
-                  ],
-                  (error, results) => {
-                    if (error) {
-                      throw error;
-                    }
-                  }
-                )
-              }
-            }
-            response.status(201).json({mensaje:"listo"})
-          }
-          else if(results.rowCount == 0){
-            response.status(201).json([])
-          }       
-        }
-      )
-    }
-  )
-}
-
 const productosOrdenados = async(request, response) =>{
   pool.query(
     'SELECT producto_id AS id, imagen, nombre, precio, ucabmart, categoria FROM "PRODUCTO" ORDER BY nombre',
@@ -1535,27 +1500,27 @@ const productosOrdenados = async(request, response) =>{
   )
 }
 
+
+
 const postpruebaprueba = async(request, response) => {
-  const { rif, rubro } = request.body;
+  const {
+    rif, 
+    imagen,
+    nombre,
+    precio,
+    ucabmart,
+    categoria
+  } = request.body;
   let usuario = new Juridico(rif)
-  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    if(await usuario.usuarioExiste()){
-      usuario.rubro = rubro
-      if(await usuario.eliminarProveedor()){
-        console.log('todo bien')
-      }
-      else{
-        console.log('todo mal 1')
-      }
+  let producto = new Producto('', imagen, nombre, precio, ucabmart, categoria)
+  if(await usuario.usuarioExiste()){
+    if(await producto.insertarProducto(rif)){
+      console.log('esta bien')
     }
-    else{
-      console.log('todo mal 2')
-    }
-  }
-  else{
-    console.log('todo mal 3')
   }
 }
+app .route("/pruebaprueba")
+    .post(postpruebaprueba)
 
 app
   .route("/proveedor")
@@ -1579,9 +1544,6 @@ app
   .post(postEmpleado)
   .put(updateEmpleado)
   .delete(deleteEmpleado)
-
-app .route("/pruebaprueba")
-    .post(postpruebaprueba)
 
 app .route("/carnet")
     .post(imprimirCarnetUsuario)

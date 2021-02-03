@@ -991,6 +991,7 @@ const insertProducto = async(producto) =>{
                 producto.categoria
             ],
             (error, results)=>{
+                console.log(error)
                 if(error){
                     reject(error)
                 }
@@ -1011,6 +1012,93 @@ const updateProducto = async(producto) =>{
                 producto.ucabmart,
                 producto.categoria,
                 producto.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteProducto = async(producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "PRODUCTO" WHERE producto_id=$1',
+            [
+                producto.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readJuridicoProductoPID = async(producto_id)=>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "JURIDICO_PRODUCTO" WHERE fk_producto=$1',
+            [
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readJuridicoProductoRIF = async(rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "JURIDICO_PRODUCTO" WHERE fk_juridico=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertJuridicoProducto = async(rif, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "JURIDICO_PRODUCTO" (fk_juridico, fk_producto) VALUES ($1, $2)',
+            [
+                rif,
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteJuridicoProducto = async(rif, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "JURIDICO_PRODUCTO" WHERE fk_juridico=$1 AND fk_producto=$2',
+            [
+                rif,
+                producto_id
             ],
             (error, results) =>{
                 if(error){
@@ -1061,5 +1149,16 @@ module.exports = {
     deleteTarjeta: deleteTarjeta,
     //proveedor
     insertProveedor: insertProveedor,
-    deleteProveedor: deleteProveedor
+    deleteProveedor: deleteProveedor,
+    //producto
+    readProductoId: readProductoId,
+    readProductoSinId: readProductoSinId,
+    insertProducto: insertProducto,
+    updateProducto: updateProducto,
+    deleteProducto: deleteProducto,
+    //JuridicoProducto
+    readJuridicoProductoPID: readJuridicoProductoPID,
+    readJuridicoProductoRIF: readJuridicoProductoRIF,
+    insertJuridicoProducto: insertJuridicoProducto,
+    deleteJuridicoProducto: deleteJuridicoProducto
 }

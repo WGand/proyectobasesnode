@@ -6,6 +6,8 @@ const {
     insertUsuarioEmpleado, updateUsuarioEmpleado, deleteUsuarioEmpleado,
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
+    insertProducto, readProductoId, readProductoSinId, updateProducto, deleteProducto,
+    readJuridicoProductoPID, readJuridicoProductoRIF, insertJuridicoProducto, deleteJuridicoProducto,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
     insertProveedor, deleteProveedor,
@@ -980,8 +982,53 @@ class Producto{
         this.ucabmart = ucabmart
         this.categoria = categoria
     }
-    async insertarProducto(){
-        
+    async buscarProductoId(){
+        let producto = (await readProductoId(this.id))[0]
+        if(Object.keys(producto).length > 0){
+            this.imagen = producto.imagen
+            this.nombre = producto.nombre
+            this.precio = producto.precio
+            this.ucabmart = producto.ucabmart
+            this.categoria = producto.categoria
+            return this
+        }
+        else{
+            return null
+        }
+    }
+
+    async buscarProductoSinId(){
+        let producto = (await readProductoSinId(this))[0]
+        if(Object.keys(producto).length > 0){
+            this.id = producto.producto_id
+            return this
+        }
+        else{
+            return null
+        }
+    }
+
+    async insertarProducto(rif){
+        if(await insertProducto(this) == 1){
+            await this.buscarProductoSinId()
+            if(await insertJuridicoProducto(rif, this.id)){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async actualizarProducto(){
+        if(await updateProducto(this) ==1){
+            return true
+        }
+        else{
+            return false
+        }
     }
 }
 
@@ -995,3 +1042,4 @@ exports.Juridico = Juridico
 exports.PersonaContacto = PersonaContacto
 exports.Contenedor = Contenedor
 exports.Horario = Horario
+exports.Producto = Producto
