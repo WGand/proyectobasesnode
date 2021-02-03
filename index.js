@@ -963,6 +963,24 @@ const postProducto = async (request, response) => {
   }
 }
 
+const updateProducto = async(request, response) =>{
+  const {
+    producto_id,
+    imagen,
+    nombre,
+    precio,
+    ucabmart,
+    categoria
+  } = request.body;
+  let producto = new Producto(producto_id, imagen, nombre, precio, ucabmart, categoria)
+  if(await producto.actualizarProducto()){
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" }))
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const deleteProducto = async(request, response) =>{
   const {
     producto_id
@@ -1517,11 +1535,18 @@ const productosOrdenados = async(request, response) =>{
 
 const postpruebaprueba = async(request, response) => {
   const {
-    producto_id
+    producto_id,
+    imagen,
+    nombre,
+    precio,
+    ucabmart,
+    categoria
   } = request.body;
-  let producto = new Producto(producto_id)
-  producto.eliminarProducto()
-  console.log('todo bien')
+  let producto = new Producto(producto_id, imagen, nombre, precio, ucabmart, categoria)
+  if(await producto.actualizarProducto()){
+    response.status()
+  }
+
   
 }
 app .route("/pruebaprueba")

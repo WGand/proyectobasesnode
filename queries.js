@@ -1002,9 +1002,10 @@ const insertProducto = async(producto) =>{
 }
 
 const updateProducto = async(producto) =>{
+    console.log(producto)
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "PRODUCTO" SET imagen=$1, nombre=$2, precio=$3, ucabmart=$4, categoria=$5 WHERE producto_id=$5',
+            'UPDATE "PRODUCTO" SET imagen=$1, nombre=$2, precio=$3, ucabmart=$4, categoria=$5 WHERE producto_id=$6',
             [
                 producto.imagen,
                 producto.nombre,
@@ -1015,8 +1016,10 @@ const updateProducto = async(producto) =>{
             ],
             (error, results) =>{
                 if(error){
+                    console.log(error)
                     reject(error)
                 }
+                console.log(error)
                 resolve(results.rowCount)
             }
         )
