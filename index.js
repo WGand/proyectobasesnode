@@ -1544,6 +1544,7 @@ const postOrden = async(request, response) => {
   let usuarioGenerico = new Usuario()
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    console.log(request.body)
     let operacion = new Operacion('', fecha, monto_total, '')
     let estadoPendiente = new Estatus('', 'Pendiente')
     await operacion.insertarOperacion(usuario.tipo_usuario, rif)
@@ -1643,7 +1644,6 @@ app
   .post(postOrden)
   .put(updateOrden)
   .delete(deleteOrden)
-
 app 
   .route("/pruebaprueba")
   .post(postpruebaprueba)

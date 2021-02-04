@@ -1171,6 +1171,7 @@ const insertOperacion = async(operacion, tipo, rif) =>{
                 rif
             ],
             (error, results) =>{
+                console.log(error)
                 if(error){
                     reject(error)
                 }
