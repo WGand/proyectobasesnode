@@ -1125,6 +1125,23 @@ const deleteJuridicoProductoRIF = async(rif) =>{
     })
 }
 
+const readOperaciones = async(tipo, rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "OPERACION" WHERE fk_'+tipo+'=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
 const readOperacion = async(rif, tipo, fecha) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -1461,6 +1478,7 @@ module.exports = {
     //estatus
     readEstatus: readEstatus,
     //OperacionEstatus
+    readOperaciones: readOperaciones,
     readOperacionEstatusEID: readOperacionEstatusEID,
     readOperacionEstatusOPID: readOperacionEstatusOPID,
     insertOperacionEstatus: insertOperacionEstatus,

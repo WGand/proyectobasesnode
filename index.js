@@ -7,7 +7,8 @@ const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
 const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
-  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario} = require('./clases')
+  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario} = require('./clases');
+const { response } = require("express");
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -1568,7 +1569,6 @@ const updateOrden = async(request, response) =>{
   let usuarioGenerico = new Usuario()
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    let estadoPendiente = new Estatus('', 'Pendiente')
     let operacion = new Operacion('', fecha, monto_total, '')
     await operacion.buscarOperacion(usuario.tipo_usuario, rif)
     await contenedor.eliminarListaProducto(operacion.id, operacion.tipo)
@@ -1606,9 +1606,38 @@ const deleteOrden = async(request, response) =>{
   }
 }
 
+const todosOrdenes = async(request, response) =>{
+  const {
+    rif,
+    tipo
+  } = request.body;
+  let contenedorProductos = new Contenedor(rif)
+  let contenedorEstatus = new Contenedor()
+  let usuarioGenerico = new Usuario()
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let operacion = new Operacion()
+    operacion = await operacion.buscarTodos(usuario.tipo_usuario, rif)
+    await contenedorProductos.buscarTodosProductos(operacion)
+    await contenedorEstatus.buscarTodosEstados(operacion)
+    let todo = {}
+    todo['productos'] = contenedorProductos.contenedor
+    todo['ordenes'] = contenedorEstatus.contenedor
+    todo['operaciones'] = operacion
+    response.status(201).json(todo)
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postpruebaprueba = async(request, response) => {
 
 }
+app 
+  .route("/todasordenes")
+  .post(todosOrdenes)
+
 app
   .route("/orden")
   .post(postOrden)

@@ -8,7 +8,7 @@ const {
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     insertProducto, readProductoId, readProductoSinId, updateProducto, deleteProducto,
     readJuridicoProductoPID, readJuridicoProductoRIF, insertJuridicoProducto, deleteJuridicoProductoPID, deleteJuridicoProductoRIF,
-    readOperacionEstatusEID, readOperacionEstatusOPID, insertOperacionEstatus, updateOperacionEstatus, deleteOperacionEstatus,
+    readOperacionEstatusEID, readOperacionEstatusOPID, insertOperacionEstatus, updateOperacionEstatus, deleteOperacionEstatus, readOperaciones,
     readListaProducto, insertListaProducto, updateListaProductoCantidad, deleteListaProducto,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
@@ -317,6 +317,18 @@ class Contenedor{
         }
         else{
             return false
+        }
+    }
+
+    async buscarTodosProductos(operaciones){
+        for(let i=0; i<Object.keys(operaciones).length; i++){
+            this.contenedor.push(await readListaProducto(operaciones[i].operacion_id, 'operacion'))
+        }
+    }
+
+    async buscarTodosEstados(operaciones){
+        for(let i=0; i<Object.keys(operaciones).length; i++){
+            this.contenedor.push(await readOperacionEstatusOPID(operaciones[i].operacion_id))
         }
     }
 
@@ -1008,6 +1020,11 @@ class Operacion{
         this.monto_total = monto_total
         this.fecha_entrega = fecha_entrega
         this.tipo = 'operacion'
+    }
+
+    async buscarTodos(tipo, rif){
+        let operacion = await readOperaciones(tipo, rif)
+        return operacion
     }
 
     async buscarOperacion(tipo, rif){
