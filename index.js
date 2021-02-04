@@ -6,7 +6,8 @@ const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
-const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico, PersonaContacto, Contenedor, Horario, Producto} = require('./clases')
+const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
+  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario} = require('./clases')
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -790,7 +791,6 @@ const postEmpleado = async (request, response) => {
     prefijo_celular,
     horario
   } = request.body;
-  console.log(request.body)
   if(Object.keys(request.body).length == 17){
     if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
@@ -1531,24 +1531,90 @@ const productosOrdenados = async(request, response) =>{
   )
 }
 
+const postOrden = async(request, response) => {
+  const {
+    producto,
+    rif,
+    fecha,
+    monto_total,
+    tipo// natural, empleado, juridico
+  } = request.body
+  let contenedor = new Contenedor()
+  let usuarioGenerico = new Usuario()
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let operacion = new Operacion('', fecha, monto_total, '')
+    let estadoPendiente = new Estatus('', 'Pendiente')
+    await operacion.insertarOperacion(usuario.tipo_usuario, rif)
+    await estadoPendiente.buscarEstado()
+    await operacion.insertarOperacionEstatus(estadoPendiente)
+    await operacion.insertarOrden(contenedor.contenedor)
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
 
+const updateOrden = async(request, response) =>{
+  const {
+    producto,
+    rif,
+    fecha,
+    monto_total,
+    tipo
+  } = request.body;
+  let contenedor = new Contenedor(rif)
+  let usuarioGenerico = new Usuario()
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let estadoPendiente = new Estatus('', 'Pendiente')
+    let operacion = new Operacion('', fecha, monto_total, '')
+    await operacion.buscarOperacion(usuario.tipo_usuario, rif)
+    await contenedor.eliminarListaProducto(operacion.id, operacion.tipo)
+    await operacion.insertarOrden(contenedor.contenedor)
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const deleteOrden = async(request, response) =>{
+  const {
+    producto,
+    rif,
+    fecha,
+    monto_total,
+    tipo
+  } = request.body;
+  let contenedor = new Contenedor(rif)
+  let usuarioGenerico = new Usuario()
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let estadoPendiente = new Estatus('', 'Pendiente')
+    await estadoPendiente.buscarEstado()
+    let operacion = new Operacion('', fecha, monto_total, '')
+    await operacion.buscarOperacion(usuario.tipo_usuario, rif)
+    await operacion.eliminarOperacionEstatus(estadoPendiente.id)
+    await contenedor.eliminarListaProducto(operacion.id, operacion.tipo)
+    await operacion.eliminarOperacion()
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
 
 const postpruebaprueba = async(request, response) => {
-  const {
-    producto_id,
-    imagen,
-    nombre,
-    precio,
-    ucabmart,
-    categoria
-  } = request.body;
-  let producto = new Producto(producto_id, imagen, nombre, precio, ucabmart, categoria)
-  if(await producto.actualizarProducto()){
-    response.status()
-  }
 
-  
 }
+app
+  .route("/orden")
+  .post(postOrden)
+  .put(updateOrden)
+  .delete(deleteOrden)
+
 app 
   .route("/pruebaprueba")
   .post(postpruebaprueba)

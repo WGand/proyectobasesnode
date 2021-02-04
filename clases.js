@@ -8,10 +8,12 @@ const {
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     insertProducto, readProductoId, readProductoSinId, updateProducto, deleteProducto,
     readJuridicoProductoPID, readJuridicoProductoRIF, insertJuridicoProducto, deleteJuridicoProductoPID, deleteJuridicoProductoRIF,
+    readOperacionEstatusEID, readOperacionEstatusOPID, insertOperacionEstatus, updateOperacionEstatus, deleteOperacionEstatus,
+    readListaProducto, insertListaProducto, updateListaProductoCantidad, deleteListaProducto,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
     insertProveedor, deleteProveedor,
-    readLugar
+    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion
     } = require('./queries')
 
 class Validador{
@@ -293,6 +295,31 @@ class Contenedor{
             return false
         }
     }
+    async eliminarListaProducto(id, tipo){
+        let producto = await readListaProducto(id, tipo)
+        if(await deleteListaProducto(id, tipo) == producto.length){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async ordenarProducto(producto){
+        var obj = JSON.parse(producto)
+        if(Object.keys(obj).length > 0){
+            for(let i=0; i<Object.keys(obj).length; i++){
+                let producto = await (new Producto(obj[i].id)).buscarProductoId()
+                producto.cantidad = obj[i].cantidad
+                this.contenedor.push(producto)
+            }
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
 }
 
 class Horario{
@@ -493,6 +520,16 @@ class Usuario{
     }
     async usuarioExiste(){
         return (await readUsuario(this.rif, this.tipo_usuario_tabla))[0]
+    }
+    async crearUsuario(tipo){
+        switch(tipo){
+            case 'natural':
+                return new Natural()
+            case 'juridico':
+                return new Juridico()
+            case 'empleado':
+                return new Empleado()
+        }
     }
 }
 
@@ -702,7 +739,6 @@ class Juridico extends Usuario{
         }
     }
 }
-
 
 class PersonaContacto{
     constructor(nombre, primer_apellido,segundo_apellido){
@@ -966,10 +1002,71 @@ class Punto{
 
 class Operacion{
     constructor(condiciones, fecha_orden, monto_total, fecha_entrega){
+        this.id
         this.condiciones = condiciones
         this.fecha_orden = fecha_orden
         this.monto_total = monto_total
         this.fecha_entrega = fecha_entrega
+        this.tipo = 'operacion'
+    }
+
+    async buscarOperacion(tipo, rif){
+        let operacion = (await readOperacion(rif, tipo, this.fecha_orden))[0]
+        this.id = operacion.operacion_id
+    }
+
+    async insertarOperacion(tipo, rif){
+        if(await insertOperacion(this, tipo, rif)){
+            this.buscarOperacion(tipo, rif)
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async insertarOrden(listaProducto){
+        for(let i=0; i< listaProducto.length; i++){
+            await listaProducto[i].insertarListaProducto(this.id, this.tipo)        
+        }
+    }
+
+    async eliminarOperacionEstatus(estatus_id){
+        if(await deleteOperacionEstatus(this.id, estatus_id, this.fecha_orden)){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async eliminarOperacion(){
+        if(await deleteOperacion(this) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async insertarOperacionEstatus(estatus){
+        if(await insertOperacionEstatus(this.id, estatus.id, this.fecha_orden) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+}
+
+class Estatus{
+    constructor(id, tipo){
+        this.id = id
+        this.tipo = tipo
+    }
+    async buscarEstado(){
+        let estado = (await readEstatus(this.tipo))[0]
+        this.id = estado.estatus_id
     }
 }
 
@@ -981,9 +1078,10 @@ class Producto{
         this.precio = precio
         this.ucabmart = ucabmart
         this.categoria = categoria
+        this.cantidad
     }
     async buscarProductoId(){
-        let producto = (await readProductoId(this.id))[0]
+        let producto = (await readProductoId(this))[0]
         if(Object.keys(producto).length > 0){
             this.imagen = producto.imagen
             this.nombre = producto.nombre
@@ -1059,6 +1157,14 @@ class Producto{
             return false
         }
     }
+    async insertarListaProducto(id, tipo){
+        if(await insertListaProducto(id, this.cantidad, tipo, this.id) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
 }
 
 exports.ValidadorUsuario = ValidadorUsuario
@@ -1072,3 +1178,6 @@ exports.PersonaContacto = PersonaContacto
 exports.Contenedor = Contenedor
 exports.Horario = Horario
 exports.Producto = Producto
+exports.Operacion = Operacion
+exports.Estatus = Estatus
+exports.Usuario = Usuario

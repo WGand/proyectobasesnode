@@ -991,7 +991,6 @@ const insertProducto = async(producto) =>{
                 producto.categoria
             ],
             (error, results)=>{
-                console.log(error)
                 if(error){
                     reject(error)
                 }
@@ -1002,7 +1001,6 @@ const insertProducto = async(producto) =>{
 }
 
 const updateProducto = async(producto) =>{
-    console.log(producto)
     return new Promise((resolve, reject) =>{
         pool.query(
             'UPDATE "PRODUCTO" SET imagen=$1, nombre=$2, precio=$3, ucabmart=$4, categoria=$5 WHERE producto_id=$6',
@@ -1016,10 +1014,8 @@ const updateProducto = async(producto) =>{
             ],
             (error, results) =>{
                 if(error){
-                    console.log(error)
                     reject(error)
                 }
-                console.log(error)
                 resolve(results.rowCount)
             }
         )
@@ -1129,6 +1125,281 @@ const deleteJuridicoProductoRIF = async(rif) =>{
     })
 }
 
+const readOperacion = async(rif, tipo, fecha) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "OPERACION" WHERE fk_'+tipo+'=$1 AND fecha_orden=$2',
+            [
+                rif,
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )   
+    })
+}
+
+const insertOperacion = async(operacion, tipo, rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "OPERACION" (condiciones, fecha_orden, monto_total, fk_'+tipo+') VALUES ($1, $2, $3, $4)',
+            [
+                operacion.condiciones,
+                operacion.fecha_orden,
+                operacion.monto_total,
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateOperacion = async(operacion) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "OPERACION" SET condiciones =$1, fecha_orden=$2, monto_total=$3 WHERE operacion_id = $4',
+            [
+                operacion.condiciones,
+                operacion.fecha_orden,
+                operacion.monto_total,
+                operacion.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateOperacionFE = async(operacion) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "OPERACION" SET condiciones =$1, fecha_orden=$2, monto_total=$3 WHERE operacion_id = $4',
+            [
+                operacion.condiciones,
+                operacion.fecha_orden,
+                operacion.monto_total,
+                operacion.id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteOperacion = async(operacion) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "OPERACION" WHERE operacion_id=$1',
+            [
+                operacion.id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readEstatus = async(estado) =>{
+    return new Promise((resolve, reject)=>{
+        pool.query(
+            'SELECT * FROM "ESTATUS" WHERE tipo=$1',
+            [
+                estado
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readOperacionEstatusOPID = async(operacion_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "OPERACION_ESTATUS" WHERE fk_operacion=$1',
+            [
+                operacion_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readOperacionEstatusEID = async(estatus_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "OPERACION_ESTATUS" WHERE fk_estatus=$1',
+            [
+                estatus_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "OPERACION_ESTATUS" (fk_operacion, fk_estatus, fecha) VALUES ($1, $2, $3)',
+            [
+                operacion_id,
+                estatus_id,
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "OPERACION_ESTATUS" SET fecha=$1 WHERE fk_operacion=$2 AND fk_estatus=$3',
+            [
+                fecha,
+                operacion_id,
+                estatus_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "OPERACION_ESTATUS" WHERE fk_operacion=$1 AND fk_estatus=$2 AND fecha=$3',
+            [
+                operacion_id,
+                estatus_id,
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readListaProducto = async(id, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "LISTA_PRODUCTO" WHERE fk_'+tipo+'=$1',
+            [
+                id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertListaProducto = async(id, cantidad, tipo, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "LISTA_PRODUCTO" (cantidad, fk_'+tipo+', fk_producto) VALUES ($1, $2, $3)',
+            [
+                cantidad,
+                id,
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateListaProductoCantidad = async(id, cantidad, tipo, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "LISTA_PRODUCTO" SET cantidad=$1 WHERE fk_'+tipo+'=$2 AND fk_producto=$3',
+            [
+                cantidad,
+                id,
+                producto_id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteListaProducto = async(id, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "LISTA_PRODUCTO" WHERE fk_'+tipo+'=$1',
+            [
+                id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto
@@ -1180,5 +1451,25 @@ module.exports = {
     readJuridicoProductoRIF: readJuridicoProductoRIF,
     insertJuridicoProducto: insertJuridicoProducto,
     deleteJuridicoProductoPID: deleteJuridicoProductoPID,
-    deleteJuridicoProductoRIF: deleteJuridicoProductoRIF
+    deleteJuridicoProductoRIF: deleteJuridicoProductoRIF,
+    //Operacion
+    readOperacion: readOperacion,
+    insertOperacion: insertOperacion,
+    updateOperacion: updateOperacion,
+    updateOperacionFE: updateOperacionFE,
+    deleteOperacion: deleteOperacion,
+    //estatus
+    readEstatus: readEstatus,
+    //OperacionEstatus
+    readOperacionEstatusEID: readOperacionEstatusEID,
+    readOperacionEstatusOPID: readOperacionEstatusOPID,
+    insertOperacionEstatus: insertOperacionEstatus,
+    deleteOperacionEstatus: deleteOperacionEstatus,
+    updateOperacionEstatus: updateOperacionEstatus,
+    //ListaProducto
+    readListaProducto: readListaProducto,
+    insertListaProducto: insertListaProducto,
+    updateListaProductoCantidad: updateListaProductoCantidad,
+    deleteListaProducto: deleteListaProducto,
+
 }
