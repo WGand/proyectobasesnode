@@ -1672,6 +1672,51 @@ const postpruebaprueba = async(request, response) => {
     response.status(201).json([])
   }
 }
+
+const cambioPunto = async(request, response) =>{
+    let precio = new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_PUNTO" WHERE fecha = (SELECT MAX(fecha) FROM "HISTORICO_PUNTO")',
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+    response.status(201).json(await precio)
+}
+
+const cambioDivisa = async(request, response) =>{
+  const {
+    tipo
+  } = request.body;
+  let precio = new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_DIVISA")',
+            [
+                tipo
+            ],
+            (error, results) => {
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+    response.status(201).json(await precio)
+}
+
+app
+  .route("/cambiodivisa")
+  .get(cambioDivisa)
+
+app
+  .route("/cambiopunto")
+  .get(cambioPunto)
+
 app
   .route("/productoparticular")
   .post(productoParticular)

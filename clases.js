@@ -12,6 +12,10 @@ const {
     readListaProducto, insertListaProducto, updateListaProductoCantidad, deleteListaProducto,
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
+    readCheque, insertCheque, deleteCheque,
+    readCanje, insertCanje, deleteCanje,
+    readMoneda, insertMoneda, deleteMoneda,
+    insertPunto, updatePunto, deletePunto, readPunto,
     insertProveedor, deleteProveedor,
     readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion
     } = require('./queries')
@@ -980,8 +984,27 @@ class Cheque extends TipoPago{
         this.nombre_banco = nombre_banco
     }
     async insertarMetodo(rif, tipo){
-        if(await insertCheque){
-            
+        if(await insertCheque(this, rif, tipo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+}
+
+class Moneda extends TipoPago{
+    constructor(fecha, tipo, cambio){
+        super(fecha)
+        this.tipo = tipo
+        this.cambio = cambio
+    }
+    async insertarMetodo(rif, tipo){
+        if(await insertMoneda(rif, tipo, this) == 1){
+            return true
+        }
+        else{
+            return false
         }
     }
 }
@@ -992,19 +1015,27 @@ class Canje extends TipoPago{
         this.cantidad = cantidad
         this.cambio = cambio
     }
-}
-
-class Moneda extends TipoPago{
-    constructor(fecha, tipo, cambio){
-        super(fecha)
-        this.tipo = tipo
-        this.cambio = cambio
+    async insertarMetodo(rif, tipo){
+        if(await insertCanje(this, rif, tipo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
     }
 }
 
 class Punto{
     constructor(cantidad){
         cantidad = cantidad
+    }
+    async buscarPuntos(rif, tipo){
+        if(await readPunto(rif, tipo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
     }
 }
 

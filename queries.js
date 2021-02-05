@@ -760,7 +760,7 @@ const deletePunto = async(rif, tipo) => {
 const readHistoricoPunto = async() => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "HISTORICO_PUNTO"',
+            'SELECT * FROM "HISTORICO_PUNTO" WHERE fecha = (SELECT MAX(fecha) FROM "HISTORICO_PUNTO")',
             (error, results) => {
                 if(error){
                     reject(error)
@@ -822,10 +822,13 @@ const deleteHistoricoPunto = async(fecha) => {
     })
 }
 
-const readHistoricoDivisa = async() => {
+const readHistoricoDivisa = async(tipo) => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "HISTORICO_DIVISA"',
+            'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_OPERACION")',
+            [
+                tipo
+            ],
             (error, results) => {
                 if(error){
                     reject(error)
@@ -1417,6 +1420,60 @@ const deleteListaProducto = async(id, tipo) =>{
     })
 }
 
+const readMoneda = async(id, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "MONEDA" where fk_'+tipo+'=$1',
+            [
+                id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertMoneda = async(id, tipo, moneda) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "MONEDA" (tipo, cambio, fecha, fk_'+tipo+') VALUES ($1, $2, $3, $4)',
+            [
+                moneda.tipo,
+                moneda.cambio,
+                moneda.fecha,
+                id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteMoneda = async(id, tipo) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "MONEDA" WHERE fk_'+tipo+'=$1',
+            [
+                id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto
@@ -1502,6 +1559,19 @@ module.exports = {
     updatePunto: updatePunto,
     insertPunto: insertPunto,
     deletePunto: deletePunto,
-    //
+    //Moneda
+    readMoneda: readMoneda,
+    insertMoneda: insertMoneda,
+    deleteMoneda: deleteMoneda,
+    //HistoricoPunto
+    readHistoricoPunto: readHistoricoPunto,
+    insertHistoricoPunto: insertHistoricoPunto,
+    deleteHistoricoPunto: deleteHistoricoPunto,
+    //HistoricoDivisa
+    readHistoricoDivisa: readHistoricoDivisa,
+    readHistoricoDivisaFecha: readHistoricoDivisaFecha,
+    readHistoricoDivisaTipo: readHistoricoDivisaTipo,
+    insertHistoricoDivisa: insertHistoricoDivisa,
+    deleteHistoricoDivisa: deleteHistoricoDivisa
 
 }
