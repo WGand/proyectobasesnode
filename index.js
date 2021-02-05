@@ -1632,9 +1632,50 @@ const todosOrdenes = async(request, response) =>{
   }
 }
 
-const postpruebaprueba = async(request, response) => {
-
+const productoParticular = async(request, response) =>{
+  const{
+    producto_id
+  } = request.body
+  let producto = new Producto(producto_id)
+  producto = await producto.buscarProductoId()
+  if(producto != null){
+    response.status(201).json(producto)
+  }
+  else{
+    response.status(201).json([])
+  }
+  
 }
+
+const postpruebaprueba = async(request, response) => {
+  const {
+    producto,
+    rif,
+    fecha,
+    monto_total,
+    tipo,
+    metodo_pago,
+    tipo_metodo_pago
+  } = request.body;
+  let contenedor = new Contenedor(rif)
+  let usuarioGenerico = new Usuario()
+  let estadoPagado = new Estatus('', 'Pagado')
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let operacion = new Operacion('', fecha, monto_total, '')
+    await operacion.buscarOperacion(usuario.tipo_usuario, rif)
+    await operacion.actualizarOperacion()
+    await operacion.actualizarOperacionEstatus(estadoPagado)
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+app
+  .route("/productoparticular")
+  .post(productoParticular)
+
 app 
   .route("/todasordenes")
   .post(todosOrdenes)

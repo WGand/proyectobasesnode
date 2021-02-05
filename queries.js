@@ -1171,7 +1171,6 @@ const insertOperacion = async(operacion, tipo, rif) =>{
                 rif
             ],
             (error, results) =>{
-                console.log(error)
                 if(error){
                     reject(error)
                 }
@@ -1184,7 +1183,7 @@ const insertOperacion = async(operacion, tipo, rif) =>{
 const updateOperacion = async(operacion) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "OPERACION" SET condiciones =$1, fecha_orden=$2, monto_total=$3 WHERE operacion_id = $4',
+            'UPDATE "OPERACION" SET condiciones =$1, fecha_entrega=$2, monto_total=$3 WHERE operacion_id = $4',
             [
                 operacion.condiciones,
                 operacion.fecha_orden,
@@ -1490,5 +1489,19 @@ module.exports = {
     insertListaProducto: insertListaProducto,
     updateListaProductoCantidad: updateListaProductoCantidad,
     deleteListaProducto: deleteListaProducto,
+    //Cheque
+    readCheque: readCheque,
+    insertCheque: insertCheque,
+    deleteCheque: deleteCheque,
+    //Canje
+    readCanje: readCanje,
+    insertCanje: insertCanje,
+    deleteCanje: deleteCanje,
+    //Punto
+    readPunto: readPunto,
+    updatePunto: updatePunto,
+    insertPunto: insertPunto,
+    deletePunto: deletePunto,
+    //
 
 }

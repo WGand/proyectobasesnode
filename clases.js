@@ -13,7 +13,7 @@ const {
     readHorario, readHorarioSinId,
     readTarjeta, insertTarjeta, deleteTarjeta,
     insertProveedor, deleteProveedor,
-    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion
+    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion
     } = require('./queries')
 
 class Validador{
@@ -939,6 +939,18 @@ class TipoPago{
     constructor(fecha){
         this.fecha = fecha
     }
+    async crearMetodo(tipo){
+        switch(tipo){
+            case 'tarjeta':
+                return new Tarjeta()
+            case 'cheque':
+                return new Cheque()
+            case 'canje':
+                return new Canje()
+            case 'moneda':
+                return new Moneda()
+        }
+    }
 }
 
 class Tarjeta extends TipoPago{
@@ -951,30 +963,9 @@ class Tarjeta extends TipoPago{
         this.nombre_tarjeta = nombre_tarjeta
         this.tipo = tipo
     }
-    async insertarTarjeta(rif, tipo){
+    async insertarMetodo(rif, tipo){
         if(await insertTarjeta(this, rif, tipo) == 1){
             return true
-        }
-        else{
-            return false
-        }
-    }
-    async eliminarTarjeta(rif, tipo){
-        if(await deleteTarjeta(rif, tipo) == 1){
-            return true
-        }
-        else{
-            return false
-        }
-    }
-    async actualizarTarjeta(rif, tipo){
-        if(await eliminarTarjeta(rif, tipo)){
-            if(await this.insertarTarjeta(rif, tipo)){
-                return true
-            }
-            else{
-                return false
-            }
         }
         else{
             return false
@@ -987,6 +978,11 @@ class Cheque extends TipoPago{
         super(fecha)
         this.numero_confirmacion = numero_confirmacion
         this.nombre_banco = nombre_banco
+    }
+    async insertarMetodo(rif, tipo){
+        if(await insertCheque){
+            
+        }
     }
 }
 
@@ -1042,6 +1038,15 @@ class Operacion{
         }
     }
 
+    async actualizarOperacion(){
+        if(await updateOperacion(this) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
     async insertarOrden(listaProducto){
         for(let i=0; i< listaProducto.length; i++){
             await listaProducto[i].insertarListaProducto(this.id, this.tipo)        
@@ -1068,6 +1073,15 @@ class Operacion{
 
     async insertarOperacionEstatus(estatus){
         if(await insertOperacionEstatus(this.id, estatus.id, this.fecha_orden) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async actualizarOperacionEstatus(estatus){
+        if(await updateOperacionEstatus(this.id, estatus.id, this.fecha_orden)){
             return true
         }
         else{
