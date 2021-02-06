@@ -9,6 +9,7 @@ const multer = require("multer");
 const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
   PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto} = require('./clases');
 const { response } = require("express");
+const { Console } = require("console");
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -572,7 +573,9 @@ const updateNatural = async (request, response) => {
     municipio,
     estado
   } = request.body;
+  console.log(Object.keys(request.body).length)
   if(Object.keys(request.body).length == 14){
+    console.log('sdjasd')
     if(validador.natural(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
       let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
@@ -604,8 +607,7 @@ const updateNatural = async (request, response) => {
 const deleteNatural = async (request, response) => {
   const { rif } = request.body;
   let usuario = new Natural(rif)
-  await usuario.usuarioExiste()
-  if(usuario != null && usuario != undefined){
+  if(await usuario.usuarioExiste()){
     if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
       if(await usuario.eliminarUsuario()){
         response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
@@ -705,6 +707,7 @@ const updateJuridico = async (request, response) => {
     persona_contacto_celular,
     persona_contacto_prefijo_celular
   } = request.body;
+  console.log(Object.keys(request.body).length)
   if(Object.keys(request.body).length == 21){
     if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
     validador.PersonaContacto(request.body)){
@@ -750,7 +753,8 @@ const deleteJuridico = async (request, response) => {
     usuario.persona_contacto = new PersonaContacto()
     await usuario.persona_contacto.personaExiste(rif)
     await usuario.persona_contacto.idPersona(rif)
-    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario)){
+    if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario) && 
+    await usuario.persona_contacto.telefono.eliminarTelefono(usuario.persona_contacto.id ,usuario.persona_contacto.tipo_usuario)){
       if(await usuario.persona_contacto.eliminarPersonaContacto(rif)){
         if(await usuario.eliminarUsuario()){
           response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
@@ -1646,10 +1650,19 @@ const todosOrdenes = async(request, response) =>{
   let contenedorProductos = new Contenedor(rif)
   let contenedorEstatus = new Contenedor()
   let usuarioGenerico = new Usuario()
+  let operacion = new Operacion()
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    let operacion = new Operacion()
     operacion = await operacion.buscarTodos(usuario.tipo_usuario, rif)
+    let opera = new Operacion()
+    let estado = 0
+    for(let i=0; i< operacion.length; i++){
+      opera.id = operacion[i].operacion_id
+        estado = await opera.buscarEstadoOperacion()
+        if(estado == 1){
+          await opera.actualizarOperacion(operacion[i].operacion_id)
+        }
+    }
     await contenedorProductos.buscarTodosProductos(operacion)
     await contenedorEstatus.buscarTodosEstados(operacion)
     let todo = {}
@@ -1738,7 +1751,11 @@ const productoParticular = async(request, response) =>{
 }
 
 const postpruebaprueba = async(request, response) => {
-
+  const{
+    operacion_id
+  } = request.body
+  let operacion = new Operacion()
+  await operacion.actualizarOperacion(operacion_id)
 }
 
 app

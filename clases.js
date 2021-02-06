@@ -200,7 +200,7 @@ class ValidadorUsuario extends Validador{
                 }
             case 14:
                 if(this.campoVacio(usuarioNatural.primer_nombre) && this.campoVacio(usuarioNatural.primer_apellido) && this.contrasena(usuarioNatural.contrasena) 
-                && this.correo(usuarioNatural.correo_Empleadonico) && this.rif(usuarioNatural.rif)){
+                && this.correo(usuarioNatural.correo_electronico) && this.rif(usuarioNatural.rif)){
                     return true
                 }
                 else{
@@ -584,7 +584,7 @@ class Natural extends Usuario {
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 10){
+        if(Object.keys(usuario).length == 11){
             this.primer_nombre = usuario.primer_nombre
             this.segundo_nombre = usuario.segundo_nombre
             this.primer_apellido = usuario.primer_apellido
@@ -679,7 +679,7 @@ class Juridico extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 9){
+        if(Object.keys(usuario).length == 10){
             this.denominacion_comercial = usuario.denominacion_comercial
             this.correo_electronico = usuario.correo_electronico
             this.contrasena = usuario.contrasena
@@ -876,7 +876,7 @@ class Empleado extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 13){
+        if(Object.keys(usuario).length == 14){
             this.primer_nombre = usuario.primer_nombre
             this.segundo_nombre = usuario.segundo_nombre
             this.primer_apellido = usuario.primer_apellido
@@ -1181,13 +1181,20 @@ class Operacion{
         }
     }
 
-    async actualizarOperacion(){
-        if(await updateOperacion(this) == 1){
-            return true
+    async actualizarOperacion(operacion_id){
+        this.id = operacion_id
+        await this.buscarOperacionId()
+        this.monto_total = 0
+        let productos_id = await readListaProducto(this.id, this.tipo)
+        await deleteListaProducto(operacion_id, this.tipo)
+        for(let i=0; i< productos_id.length; i++){
+            let producto = new Producto(productos_id[i].fk_producto)
+            if(await producto.buscarProductoId() != null){
+                this.monto_total += parseInt(productos_id[i].cantidad) * parseFloat(producto.precio)
+                await insertListaProducto(this.id, productos_id[i].cantidad, this.tipo, producto.id)
+            }
         }
-        else{
-            return false
-        }
+        await updateOperacion(this)
     }
 
     async insertarOrden(listaProducto){
@@ -1256,13 +1263,15 @@ class Producto{
     }
     async buscarProductoId(){
         let producto = (await readProductoId(this))[0]
-        if(Object.keys(producto).length > 0){
-            this.imagen = producto.imagen
-            this.nombre = producto.nombre
-            this.precio = producto.precio
-            this.ucabmart = producto.ucabmart
-            this.categoria = producto.categoria
-            return this
+        if(producto != null){
+            if(Object.keys(producto).length > 0){
+                this.imagen = producto.imagen
+                this.nombre = producto.nombre
+                this.precio = producto.precio
+                this.ucabmart = producto.ucabmart
+                this.categoria = producto.categoria
+                return this
+            }
         }
         else{
             return null
