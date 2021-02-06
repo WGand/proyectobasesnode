@@ -1747,7 +1747,7 @@ app
 
 app
   .route("/cambiodivisa")
-  .get(cambioDivisa)
+  .post(cambioDivisa)
 
 app
   .route("/cambiopunto")
