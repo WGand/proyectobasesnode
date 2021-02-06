@@ -7,7 +7,7 @@ const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
 const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
-  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario} = require('./clases');
+  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto} = require('./clases');
 const { response } = require("express");
 const app = express();
 app.use(bodyParser.json());
@@ -1544,7 +1544,6 @@ const postOrden = async(request, response) => {
   let usuarioGenerico = new Usuario()
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    console.log(request.body)
     let operacion = new Operacion('', fecha, monto_total, '')
     let estadoPendiente = new Estatus('', 'Pendiente')
     await operacion.insertarOperacion(usuario.tipo_usuario, rif)
@@ -1552,6 +1551,38 @@ const postOrden = async(request, response) => {
     await operacion.insertarOperacionEstatus(estadoPendiente)
     await operacion.insertarOrden(contenedor.contenedor)
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const ordenPaga = async(request, response) =>{
+  const {
+    operacion_id,
+    rif,
+    tipo,
+    metodo
+  } = request.body;
+  let contenedor = new Contenedor(rif)
+  let usuariogenerico = new Usuario()
+  let operacion = new Operacion()
+  operacion.id = operacion_id
+  let estadoPagado = new Estatus('', 'Pagado')
+  await estadoPagado.buscarEstado()
+  let usuario = await usuariogenerico.crearUsuario(tipo)
+  usuario.rif = rif
+  if((await validador.existeRif(rif, usuario.tipo_usuario_tabla)) && (await contenedor.ordenarMetodos(metodo, usuario.rif, usuario.tipo_usuario))){
+    await operacion.buscarOperacionId()
+    let estado = await operacion.buscarEstadoOperacion()
+    if(estado == 1){
+      await operacion.actualizarOperacionEstatus(estadoPagado)
+      await contenedor.insertarMetodos(usuario.rif, usuario.tipo_usuario)
+      response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+    }
+    else{
+      response.status(201).json([])
+    }
   }
   else{
     response.status(201).json([])
@@ -1632,6 +1663,43 @@ const todosOrdenes = async(request, response) =>{
   }
 }
 
+const cambioPunto = async(request, response) =>{
+  let precio = new Promise((resolve, reject) =>{
+      pool.query(
+          'SELECT * FROM "HISTORICO_PUNTO" WHERE fecha = (SELECT MAX(fecha) FROM "HISTORICO_PUNTO")',
+          (error, results) => {
+              if(error){
+                  reject(error)
+              }
+              resolve(results.rows)
+          }
+      )
+  })
+  response.status(201).json(await precio)
+}
+
+const cambioDivisa = async(request, response) =>{
+const {
+  tipo
+} = request.body;
+let precio = new Promise((resolve, reject) =>{
+      pool.query(
+        'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_DIVISA" WHERE tipo=$1)',
+          [
+              tipo
+          ],
+          (error, results) => {
+              if(error){
+                  reject(error)
+              }
+              resolve(results.rows)
+          }
+      )
+  })
+  response.status(201).json(await precio)
+}
+
+
 const productoParticular = async(request, response) =>{
   const{
     producto_id
@@ -1647,66 +1715,11 @@ const productoParticular = async(request, response) =>{
   
 }
 
+
+
 const postpruebaprueba = async(request, response) => {
-  const {
-    producto,
-    rif,
-    fecha,
-    monto_total,
-    tipo,
-    metodo_pago,
-    tipo_metodo_pago
-  } = request.body;
-  let contenedor = new Contenedor(rif)
-  let usuarioGenerico = new Usuario()
-  let estadoPagado = new Estatus('', 'Pagado')
-  let usuario = await usuarioGenerico.crearUsuario(tipo)
-  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    let operacion = new Operacion('', fecha, monto_total, '')
-    await operacion.buscarOperacion(usuario.tipo_usuario, rif)
-    await operacion.actualizarOperacion()
-    await operacion.actualizarOperacionEstatus(estadoPagado)
-    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
-  }
-  else{
-    response.status(201).json([])
-  }
-}
 
-const cambioPunto = async(request, response) =>{
-    let precio = new Promise((resolve, reject) =>{
-        pool.query(
-            'SELECT * FROM "HISTORICO_PUNTO" WHERE fecha = (SELECT MAX(fecha) FROM "HISTORICO_PUNTO")',
-            (error, results) => {
-                if(error){
-                    reject(error)
-                }
-                resolve(results.rows)
-            }
-        )
-    })
-    response.status(201).json(await precio)
-}
 
-const cambioDivisa = async(request, response) =>{
-  const {
-    tipo
-  } = request.body;
-  let precio = new Promise((resolve, reject) =>{
-        pool.query(
-            'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_DIVISA")',
-            [
-                tipo
-            ],
-            (error, results) => {
-                if(error){
-                    reject(error)
-                }
-                resolve(results.rows)
-            }
-        )
-    })
-    response.status(201).json(await precio)
 }
 
 app

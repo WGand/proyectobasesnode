@@ -1,3 +1,4 @@
+const { response } = require("express");
 const { pool } = require("./config");
 
 const readLugar = async(lugar) =>{
@@ -543,16 +544,16 @@ const readTarjeta = async(rif, tipo) =>{
 const insertTarjeta = async(tarjeta, rif, tipo) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'INSERT INTO "TARJETA" (numero_tarjeta, empresa, fecha, mes_caducidad, anho_caducidad, nombre_tarjeta, fk_'+tipo+') VALUES '+
+            'INSERT INTO "TARJETA" (numero_tarjeta, empresa, mes_caducidad, anho_caducidad, nombre_tarjeta, fk_'+tipo+', tipo) VALUES '+
             '($1, $2, $3, $4, $5, $6, $7)',
             [
                 tarjeta.numero_tarjeta,
                 tarjeta.empresa,
-                tarjeta.fecha,
                 tarjeta.mes_caducidad,
                 tarjeta.anho_caducidad,
                 tarjeta.nombre_tarjeta,
-                rif
+                rif,
+                tarjeta.tipo
             ],
             (error, results) =>{
                 if(error){
@@ -722,12 +723,12 @@ const insertPunto = async(punto, rif, tipo) =>{
     })
 }
 
-const updatePunto = async(punto, rif, tipo) => {
+const updatePunto = async(cantidad, rif, tipo) => {
     return new Promise((resolve, reject) =>{
         pool.query(
             'UPDATE "PUNTO" SET cantidad=$1 WHERE fk_'+tipo+'=$2',
             [
-                punto.cantidad,
+                cantidad,
                 rif
             ],
             (error, results) =>{
@@ -825,7 +826,7 @@ const deleteHistoricoPunto = async(fecha) => {
 const readHistoricoDivisa = async(tipo) => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_OPERACION")',
+            'SELECT * FROM "HISTORICO_DIVISA" WHERE tipo=$1 AND fecha =(SELECT MAX(fecha) FROM "HISTORICO_DIVISA" WHERE tipo=$1)',
             [
                 tipo
             ],
@@ -1145,6 +1146,23 @@ const readOperaciones = async(tipo, rif) =>{
     })
 }
 
+const readOperacionId = async(operacion_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "OPERACION" WHERE operacion_id=$1',
+            [
+                operacion_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
 const readOperacion = async(rif, tipo, fecha) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -1313,7 +1331,7 @@ const insertOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
 const updateOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "OPERACION_ESTATUS" SET fecha=$1 WHERE fk_operacion=$2 AND fk_estatus=$3',
+            'UPDATE "OPERACION_ESTATUS" SET fecha=$1, fk_estatus=$3 WHERE fk_operacion=$2',
             [
                 fecha,
                 operacion_id,
@@ -1423,7 +1441,7 @@ const deleteListaProducto = async(id, tipo) =>{
 const readMoneda = async(id, tipo) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "MONEDA" where fk_'+tipo+'=$1',
+            'SELECT * FROM "MONEDA" WHERE fk_'+tipo+'=$1 AND fecha=(SELECT MAX(FECHA) FROM "MONEDA" WHERE fk_'+tipo+'=$1)',
             [
                 id
             ],
@@ -1440,11 +1458,10 @@ const readMoneda = async(id, tipo) =>{
 const insertMoneda = async(id, tipo, moneda) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'INSERT INTO "MONEDA" (tipo, cambio, fecha, fk_'+tipo+') VALUES ($1, $2, $3, $4)',
+            'INSERT INTO "MONEDA" (tipo, cambio, fk_'+tipo+') VALUES ($1, $2, $3)',
             [
                 moneda.tipo,
                 moneda.cambio,
-                moneda.fecha,
                 id
             ],
             (error, results)=>{
@@ -1469,6 +1486,78 @@ const deleteMoneda = async(id, tipo) =>{
                     reject(error)
                 }
                 resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readMonedaHistorico = async(moneda_id, historico_divisa) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "MONEDA_HISTORICO" WHERE fk_moneda=$1 AND fk_historico_divisa=$2',
+            [
+                moneda_id,
+                historico_divisa
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertMonedaHistorico = async(moneda_id, historico_divisa) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "MONEDA_HISTORICO" (fk_moneda_id, fk_historico_divisa) VALUES ($1, $2)',
+            [
+                moneda_id,
+                historico_divisa
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const insertPuntoHistorico = async(punto_id, historico_punto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "PUNTO_HISTORICO" (fk_punto_id, fk_historico_punto) VALUES ($1, $2)',
+            [
+                punto_id,
+                historico_punto
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readPuntoHistorico = async(punto_id, historico_punto) => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "PUNTO_HISTORICO" WHERE fk_punto_id=$1 AND fk_historico_punto=$2',
+            [
+                punto_id,
+                historico_punto
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
             }
         )
     })
@@ -1528,6 +1617,7 @@ module.exports = {
     deleteJuridicoProductoRIF: deleteJuridicoProductoRIF,
     //Operacion
     readOperacion: readOperacion,
+    readOperacionId: readOperacionId,
     insertOperacion: insertOperacion,
     updateOperacion: updateOperacion,
     updateOperacionFE: updateOperacionFE,
@@ -1572,6 +1662,12 @@ module.exports = {
     readHistoricoDivisaFecha: readHistoricoDivisaFecha,
     readHistoricoDivisaTipo: readHistoricoDivisaTipo,
     insertHistoricoDivisa: insertHistoricoDivisa,
-    deleteHistoricoDivisa: deleteHistoricoDivisa
+    deleteHistoricoDivisa: deleteHistoricoDivisa,
+    //MonedaHistorico
+    readMonedaHistorico: readMonedaHistorico,
+    insertMonedaHistorico: insertMonedaHistorico,
+    //PuntoHistorico
+    readPuntoHistorico: readPuntoHistorico,
+    insertPuntoHistorico: insertPuntoHistorico
 
 }

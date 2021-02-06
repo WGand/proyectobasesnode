@@ -16,8 +16,9 @@ const {
     readCanje, insertCanje, deleteCanje,
     readMoneda, insertMoneda, deleteMoneda,
     insertPunto, updatePunto, deletePunto, readPunto,
+    readPuntoHistorico, insertPuntoHistorico, readMonedaHistorico, insertMonedaHistorico,
     insertProveedor, deleteProveedor,
-    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion
+    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa
     } = require('./queries')
 
 class Validador{
@@ -333,6 +334,24 @@ class Contenedor{
     async buscarTodosEstados(operaciones){
         for(let i=0; i<Object.keys(operaciones).length; i++){
             this.contenedor.push(await readOperacionEstatusOPID(operaciones[i].operacion_id))
+        }
+    }
+
+    async ordenarMetodos(metodos, rif, tipo){
+        let obj = JSON.parse(metodos)
+        let metodo = new TipoPago()
+        for(let i=0; i<Object.keys(obj).length; i++){
+            this.contenedor.push(await metodo.crearMetodo(obj[i]))
+            if(!(await this.contenedor[i].calcular(rif, tipo))){
+                return false
+            }
+        }
+        return true
+    }
+
+    async insertarMetodos(rif, tipo){
+        for(let i=0; i<this.contenedor.length; i++){
+            await this.contenedor[i].insertarMetodo(rif, tipo)
         }
     }
 
@@ -943,16 +962,24 @@ class TipoPago{
     constructor(fecha){
         this.fecha = fecha
     }
-    async crearMetodo(tipo){
-        switch(tipo){
-            case 'tarjeta':
-                return new Tarjeta()
-            case 'cheque':
-                return new Cheque()
-            case 'canje':
-                return new Canje()
-            case 'moneda':
-                return new Moneda()
+    async crearMetodo(metodo){
+        switch(metodo.tipo_metodo){
+            case 'tarjeta': 
+                let pago1 = new Tarjeta()
+                pago1.llenarObjeto(metodo)
+                return pago1
+            case 'cheque': 
+                let pago2 = new Cheque()
+                pago2.llenarObjeto(metodo)
+                return pago2
+            case 'canje': 
+                let pago3 = new Canje()
+                pago3.llenarObjeto(metodo)
+                return pago3
+            case 'moneda': 
+                let pago4 = new Moneda()
+                pago4.llenarObjeto(metodo)
+                return pago4
         }
     }
 }
@@ -975,6 +1002,17 @@ class Tarjeta extends TipoPago{
             return false
         }
     }
+    async llenarObjeto(metodo){
+        this.numero_tarjeta = metodo.numero_tarjeta
+        this.empresa = metodo.empresa
+        this.mes_caducidad = metodo.mes_caducidad
+        this.anho_caducidad = metodo.anho_caducidad
+        this.nombre_tarjeta = metodo.nombre_tarjeta
+        this.tipo = metodo.tipo
+    }
+    async calcular(rif, tipo){
+        return true
+    }
 }
 
 class Cheque extends TipoPago{
@@ -991,6 +1029,13 @@ class Cheque extends TipoPago{
             return false
         }
     }
+    async llenarObjeto(metodo){
+        this.numero_confirmacion = metodo.numero_confirmacion
+        this.nombre_banco = metodo.nombre_banco
+    }
+    async calcular(rif, tipo){
+        return true
+    }
 }
 
 class Moneda extends TipoPago{
@@ -1001,6 +1046,26 @@ class Moneda extends TipoPago{
     }
     async insertarMetodo(rif, tipo){
         if(await insertMoneda(rif, tipo, this) == 1){
+            let historico_id = (await readHistoricoDivisa(this.tipo))[0].historico_divisa_id
+            let moneda_id = (await readMoneda(rif, tipo))[0].moneda_id
+            if(await insertMonedaHistorico(moneda_id, historico_id) ==1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async llenarObjeto(metodo){
+        this.tipo = metodo.tipo
+        this.cambio = metodo.cambio
+    }
+    async calcular(rif, tipo){
+        let monto = (await readHistoricoDivisa(this.tipo))[0].valor
+        if(this.cambio%monto == 0){
             return true
         }
         else{
@@ -1017,6 +1082,30 @@ class Canje extends TipoPago{
     }
     async insertarMetodo(rif, tipo){
         if(await insertCanje(this, rif, tipo) == 1){
+            let puntohistorico = (await readHistoricoPunto())[0].historico_punto_id
+            let punto = (await readPunto(rif, tipo))[0]
+            let cantidadPuntos = punto.cantidad
+            let puntoid = punto.punto_id
+            if(await updatePunto(this.cantidad-cantidadPuntos, rif, tipo) == 1 && await insertPuntoHistorico(puntoid, puntohistorico) == 1){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+        else{
+            return false
+        }
+    }
+    async llenarObjeto(metodo){
+        this.cantidad = metodo.cantidad
+        this.cambio = metodo.cambio
+    }
+    async calcular(rif, tipo){
+        let punto = new Punto()
+        punto.buscarPuntos(rif, tipo)
+        let monto = (await readHistoricoPunto())[0].reference_bolivares
+        if(this.cambio%monto == 0 && punto.puntosSuficientes(this.cantidad)){
             return true
         }
         else{
@@ -1030,7 +1119,18 @@ class Punto{
         cantidad = cantidad
     }
     async buscarPuntos(rif, tipo){
-        if(await readPunto(rif, tipo) == 1){
+        let punto = await readPunto(rif, tipo)
+        if(punto != null && punto != undefined && punto.length >0){
+            this.cantidad = punto[0].cantidad
+            return true
+        }
+        else{
+            this.cantidad = 0
+            return false
+        }
+    }
+    puntosSuficientes(cantidad){
+        if(this.cantidad >= cantidad){
             return true
         }
         else{
@@ -1047,6 +1147,18 @@ class Operacion{
         this.monto_total = monto_total
         this.fecha_entrega = fecha_entrega
         this.tipo = 'operacion'
+    }
+
+    async buscarOperacionId(){
+        let operacion = (await readOperacionId(this.id))[0]
+        this.condiciones = operacion.condiciones
+        this.fecha_orden = operacion.fecha_orden
+        this.monto_total = operacion.monto_total
+    }
+
+    async buscarEstadoOperacion(){
+        let estado = (await readOperacionEstatusOPID(this.id))[0].fk_estatus
+        return estado
     }
 
     async buscarTodos(tipo, rif){
@@ -1243,3 +1355,4 @@ exports.Producto = Producto
 exports.Operacion = Operacion
 exports.Estatus = Estatus
 exports.Usuario = Usuario
+exports.Punto = Punto
