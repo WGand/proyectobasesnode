@@ -1663,6 +1663,28 @@ const todosOrdenes = async(request, response) =>{
   }
 }
 
+const puntosUsuario = async(request, response) =>{
+  const{
+    rif,
+    tipo
+  } = request.body
+  let usuarioGenerico = new Usuario()
+  let usuario = await usuarioGenerico.crearUsuario(tipo)
+  usuario.rif = rif
+  if(await validador.existeRif(usuario.rif, usuario.tipo_usuario_tabla)){
+    let punto = new Punto()
+    if(await punto.buscarPuntos(usuario.rif, usuario.tipo_usuario)){
+      response.status(201).json(punto)
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const cambioPunto = async(request, response) =>{
   let precio = new Promise((resolve, reject) =>{
       pool.query(
@@ -1715,12 +1737,13 @@ const productoParticular = async(request, response) =>{
   
 }
 
-
-
 const postpruebaprueba = async(request, response) => {
 
-
 }
+
+app
+  .route("/puntosusuario")
+  .post(puntosUsuario)
 
 app
   .route("/cambiodivisa")
