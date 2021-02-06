@@ -1741,7 +1741,7 @@ app
 app
   .route("/orden")
   .post(postOrden)
-  .put(updateOrden)
+  .put(ordenPaga)
   .delete(deleteOrden)
 app 
   .route("/pruebaprueba")
