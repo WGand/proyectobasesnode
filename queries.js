@@ -1430,6 +1430,7 @@ const deleteListaProducto = async(id, tipo) =>{
             ],
             (error, results)=>{
                 if(error){
+                    console.log(error)
                     reject(error)
                 }
                 console.log(results.rowCount)
