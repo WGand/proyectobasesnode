@@ -1653,7 +1653,14 @@ const todosOrdenes = async(request, response) =>{
   let operacion = new Operacion()
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    let opera = new Operacion()
     operacion = await operacion.buscarTodos(usuario.tipo_usuario, rif)
+    for(let i=0; i< operacion.length; i++){
+      opera.id = operacion[i].operacion_id
+      if(await opera.buscarEstadoOperacion() == 1){
+        await opera.actualizarOperacion()
+      }
+    }
     await contenedorProductos.buscarTodosProductos(operacion)
     await contenedorEstatus.buscarTodosEstados(operacion)
     let todo = {}

@@ -1181,22 +1181,9 @@ class Operacion{
         }
     }
 
-    async actualizarOperacion(operacion_id){
-        this.id = operacion_id
-        await this.buscarOperacionId()
-        this.monto_total = 0
-        let productos_id = await readListaProducto(this.id, this.tipo)
-        await deleteListaProducto(operacion_id, this.tipo)
-        for(let i=0; i< productos_id.length; i++){
-            let producto = new Producto(productos_id[i].fk_producto)
-            if(await producto.buscarProductoId() != null){
-                this.monto_total += parseInt(productos_id[i].cantidad) * parseFloat(producto.precio)
-                await insertListaProducto(this.id, productos_id[i].cantidad, this.tipo, producto.id)
-            }
-        }
+    async actualizarOperacion(){
         await updateOperacion(this)
     }
-
     async insertarOrden(listaProducto){
         for(let i=0; i< listaProducto.length; i++){
             await listaProducto[i].insertarListaProducto(this.id, this.tipo)        

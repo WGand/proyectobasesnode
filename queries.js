@@ -1201,14 +1201,15 @@ const insertOperacion = async(operacion, tipo, rif) =>{
     })
 }
 
+
+
 const updateOperacion = async(operacion) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "OPERACION" SET condiciones =$1, fecha_entrega=$2, monto_total=$3 WHERE operacion_id = $4',
+            'UPDATE "OPERACION" SET monto_total='+
+            '(SELECT SUM(LP.CANTIDAD * P.PRECIO) FROM "LISTA_PRODUCTO" LP, "PRODUCTO" P WHERE LP.fk_operacion=$1 AND lp.fk_producto = P.producto_id)'+
+            'WHERE operacion_id=$1',
             [
-                operacion.condiciones,
-                operacion.fecha_orden,
-                operacion.monto_total,
                 operacion.id
             ],
             (error, results) =>{
