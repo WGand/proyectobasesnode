@@ -1654,15 +1654,6 @@ const todosOrdenes = async(request, response) =>{
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
     operacion = await operacion.buscarTodos(usuario.tipo_usuario, rif)
-    let opera = new Operacion()
-    let estado = 0
-    for(let i=0; i< operacion.length; i++){
-      opera.id = operacion[i].operacion_id
-        estado = await opera.buscarEstadoOperacion()
-        if(estado == 1){
-          await opera.actualizarOperacion(operacion[i].operacion_id)
-        }
-    }
     await contenedorProductos.buscarTodosProductos(operacion)
     await contenedorEstatus.buscarTodosEstados(operacion)
     let todo = {}
