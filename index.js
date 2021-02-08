@@ -10,6 +10,7 @@ const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, J
   PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto} = require('./clases');
 const { response } = require("express");
 const { Console } = require("console");
+const e = require("express");
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -400,7 +401,19 @@ const postUsuario = async (request, response) => {
                           datosUsuario[0]['hora_inicio'] = results.rows[0]['hora_inicio']
                           datosUsuario[0]['hora_fin'] = results.rows[0]['hora_fin']
                           datosUsuario[0]['dia'] = results.rows[0]['dia']
-                          response.status(201).json(datosUsuario)
+                          pool.query(
+                            'SELECT * FROM "EMPLEADO_CARGO" WHERE fk_empleado=$1',
+                            [
+                              rif
+                            ],
+                            (error, results) => {
+                              if (error) {
+                                throw error;
+                              }
+                              datosUsuario[0]['cargos'] = results.rows
+                              response.status(201).json(datosUsuario)
+                            }
+                          )
                         }
                       )
                     }
@@ -573,9 +586,7 @@ const updateNatural = async (request, response) => {
     municipio,
     estado
   } = request.body;
-  console.log(Object.keys(request.body).length)
   if(Object.keys(request.body).length == 14){
-    console.log('sdjasd')
     if(validador.natural(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
       let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
@@ -707,7 +718,6 @@ const updateJuridico = async (request, response) => {
     persona_contacto_celular,
     persona_contacto_prefijo_celular
   } = request.body;
-  console.log(Object.keys(request.body).length)
   if(Object.keys(request.body).length == 21){
     if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
     validador.PersonaContacto(request.body)){
@@ -1566,17 +1576,19 @@ const ordenPaga = async(request, response) =>{
     operacion_id,
     rif,
     tipo,
+    estatus,
     metodo
   } = request.body;
   let contenedor = new Contenedor(rif)
   let usuariogenerico = new Usuario()
   let operacion = new Operacion()
   operacion.id = operacion_id
-  let estadoPagado = new Estatus('', 'Pagado')
+  let estadoPagado = new Estatus('', estatus)
   await estadoPagado.buscarEstado()
   let usuario = await usuariogenerico.crearUsuario(tipo)
   usuario.rif = rif
-  if((await validador.existeRif(rif, usuario.tipo_usuario_tabla)) && (await contenedor.ordenarMetodos(metodo, usuario.rif, usuario.tipo_usuario))){
+  if((await validador.existeRif(rif, usuario.tipo_usuario_tabla)) && (await contenedor.ordenarMetodos(metodo, usuario.rif, usuario.tipo_usuario)) && 
+  (estatus == 'Recibido' || estatus == 'Pagado')){
     await operacion.buscarOperacionId()
     let estado = await operacion.buscarEstadoOperacion()
     if(estado == 1){
@@ -1609,32 +1621,6 @@ const updateOrden = async(request, response) =>{
     await operacion.buscarOperacion(usuario.tipo_usuario, rif)
     await contenedor.eliminarListaProducto(operacion.id, operacion.tipo)
     await operacion.insertarOrden(contenedor.contenedor)
-    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
-  }
-  else{
-    response.status(201).json([])
-  }
-}
-
-const deleteOrden = async(request, response) =>{
-  const {
-    producto,
-    rif,
-    fecha,
-    monto_total,
-    tipo
-  } = request.body;
-  let contenedor = new Contenedor(rif)
-  let usuarioGenerico = new Usuario()
-  let usuario = await usuarioGenerico.crearUsuario(tipo)
-  if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    let estadoPendiente = new Estatus('', 'Pendiente')
-    await estadoPendiente.buscarEstado()
-    let operacion = new Operacion('', fecha, monto_total, '')
-    await operacion.buscarOperacion(usuario.tipo_usuario, rif)
-    await operacion.eliminarOperacionEstatus(estadoPendiente.id)
-    await contenedor.eliminarListaProducto(operacion.id, operacion.tipo)
-    await operacion.eliminarOperacion()
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
@@ -1732,7 +1718,6 @@ let precio = new Promise((resolve, reject) =>{
   response.status(201).json(await precio)
 }
 
-
 const productoParticular = async(request, response) =>{
   const{
     producto_id
@@ -1748,13 +1733,101 @@ const productoParticular = async(request, response) =>{
   
 }
 
+const buscarCargo = async(request, response) =>{
+  const{
+    rif
+  } = request.body
+  let usuario = new Empleado()
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    usuario.rif = rif
+    let cargos = await usuario.buscarCargos()
+    response.status(201).json(cargos)
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const postCargo = async(request, response) =>{
+  const{
+    rif,
+    cargo
+  } = request.body
+  let usuario = new Empleado()
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    usuario.rif = rif
+    let arreglo = JSON.parse(cargo)
+    for(let i=0; i<Object.keys(arreglo).length; i++){
+      await usuario.insertarEmpleadoCargo(arreglo[i].id)
+    }
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const updateCargo = async(request, response) =>{
+  const{
+    rif,
+    cargo_viejo,
+    cargo_nuevo
+  } = request.body
+  let usuario = new Empleado()
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    usuario.rif = rif
+    if(cargo_viejo != null && cargo_viejo != undefined){
+      let arreglo_viejo = JSON.parse(cargo_viejo)
+      for(let i=0; i<Object.keys(arreglo_viejo).length; i++){
+        await usuario.actualizarEmpleadoCargo(arreglo_viejo[i].id, validador.obtenerHora())
+      }
+    }
+    if(cargo_nuevo != null && cargo_nuevo != undefined){
+      let arreglo_nuevo = JSON.parse(cargo_nuevo)
+      for(let i=0; i<Object.keys(arreglo_nuevo).length; i++){
+        await usuario.insertarEmpleadoCargo(arreglo_nuevo[i].id)
+      }
+    }
+
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postpruebaprueba = async(request, response) => {
   const{
-    operacion_id
+    rif,
+    cargo_viejo,
+    cargo_nuevo
   } = request.body
-  let operacion = new Operacion()
-  await operacion.actualizarOperacion(operacion_id)
+  let usuario = new Empleado()
+  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+    usuario.rif = rif
+    let arreglo_viejo = JSON.parse(cargo_viejo)
+    let arreglo_nuevo = JSON.parse(cargo_nuevo)
+    for(let i=0; i<Object.keys(arreglo_viejo).length; i++){
+      await usuario.actualizarEmpleadoCargo(arreglo_viejo[i].id, validador.obtenerHora())
+    }
+    for(let i=0; i<Object.keys(arreglo_nuevo).length; i++){
+      await usuario.insertarEmpleadoCargo(arreglo_nuevo[i].id)
+    }
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
 }
+
+app
+  .route("/cargo")
+  .post(postCargo)
+  .put(updateCargo)
+
+app
+  .route("/buscarcargo")
+  .post(buscarCargo)
 
 app
   .route("/puntosusuario")
@@ -1780,7 +1853,6 @@ app
   .route("/orden")
   .post(postOrden)
   .put(ordenPaga)
-  .delete(deleteOrden)
 app 
   .route("/pruebaprueba")
   .post(postpruebaprueba)

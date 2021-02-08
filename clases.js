@@ -17,11 +17,33 @@ const {
     readMoneda, insertMoneda, deleteMoneda,
     insertPunto, updatePunto, deletePunto, readPunto,
     readPuntoHistorico, insertPuntoHistorico, readMonedaHistorico, insertMonedaHistorico,
+    readEmpleadoCargo, insertEmpleadoCargo, deleteEmpleadoCargo, updateEmpleadoCargo,
     insertProveedor, deleteProveedor,
-    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa
+    readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, 
+    readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa,
+    deleteProductoEnListaProducto
     } = require('./queries')
 
+
 class Validador{
+    obtenerHora(){
+        let today = new Date();
+        let dd = today.getDate();
+        let mm = today.getMonth()+1; 
+        const yyyy = today.getFullYear();
+        if(dd<10) 
+        {
+            dd=`0${dd}`;
+        } 
+    
+        if(mm<10) 
+        {
+            mm=`0${mm}`;
+        } 
+        today = `${yyyy}-${mm}-${dd}`
+        return today
+    }
+
     hora(horario){
         const rangoHora = /^([1][0-9]|[0][9]|2[0-1]):(00)$/
         if(horario.match(rangoHora) != undefined){
@@ -956,6 +978,33 @@ class Empleado extends Usuario{
             return false
         }
     }
+    async insertarEmpleadoCargo(cargo){
+        if(await insertEmpleadoCargo(this.rif, cargo) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    async actualizarEmpleadoCargo(cargo, fecha){
+        if(await updateEmpleadoCargo(this.rif, cargo, fecha) >= 0){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+    async buscarCargos(){
+        return await readEmpleadoCargo(this.rif)
+    }
+    async eliminarEmpleadoCargo(){
+        if(await deleteEmpleadoCargo(this.rif) >= 0){
+            return true
+        }
+        else{
+            return false
+        }
+    }
 }
 
 class TipoPago{
@@ -1201,6 +1250,8 @@ class Operacion{
 
     async eliminarOperacion(){
         if(await deleteOperacion(this) == 1){
+            await deleteOperacionEstatus(this.id)
+            await deleteListaProducto(this.id, this.tipo)
             return true
         }
         else{
@@ -1248,6 +1299,7 @@ class Producto{
         this.categoria = categoria
         this.cantidad
     }
+
     async buscarProductoId(){
         let producto = (await readProductoId(this))[0]
         if(producto != null){
@@ -1299,7 +1351,7 @@ class Producto{
     async eliminarProducto(rif){
         if(this.id != undefined && this.id != null && this.id != ''){
             if(await deleteJuridicoProductoPID(this.id) == 1){
-                if(await deleteProducto(this) == 1){
+                if(await deleteProductoEnListaProducto(this.id) >= 0){
                     return true
                 }
                 else{
@@ -1312,7 +1364,7 @@ class Producto{
         }
         else if(rif != undefined && rif != null && rif != '' && validador.existeRif(rif, '\"JURIDICO\"')){
             if(await deleteJuridicoProductoRIF(rif) == 1){
-                if(await deleteProducto(this) == 1){
+                if(await deleteProductoEnListaProducto(this.id) >= 0){
                     return true
                 }
                 else{

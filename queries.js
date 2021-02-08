@@ -1201,8 +1201,6 @@ const insertOperacion = async(operacion, tipo, rif) =>{
     })
 }
 
-
-
 const updateOperacion = async(operacion) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -1348,14 +1346,30 @@ const updateOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
     })
 }
 
-const deleteOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
+const deleteProductoEnListaProducto = async(producto_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'DELETE FROM "OPERACION_ESTATUS" WHERE fk_operacion=$1 AND fk_estatus=$2 AND fecha=$3',
+            'DELETE FROM "LISTA_PRODUCTO" WHERE fk_producto=$1 AND fk_operacion IN (SELECT O.operacion_id FROM "OPERACION" O,'+
+            ' "OPERACION_ESTATUS" OE, "ESTATUS" E WHERE O.operacion_id=OE.fk_operacion AND E.tipo=Pendiente)'
+        ),
+        [
+            producto_id
+        ],
+        (error, results) =>{
+            if(error){
+                reject(error)
+            }
+            resolve(results.rowCount)
+        }
+    })
+}
+
+const deleteOperacionEstatus = async(operacion_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "OPERACION_ESTATUS" WHERE fk_operacion=$1',
             [
-                operacion_id,
-                estatus_id,
-                fecha
+                operacion_id
             ],
             (error, results) =>{
                 if(error){
@@ -1431,10 +1445,8 @@ const deleteListaProducto = async(id, tipo) =>{
             ],
             (error, results)=>{
                 if(error){
-                    console.log(error)
                     reject(error)
                 }
-                console.log(results.rowCount)
                 resolve(results.rowCount)
             }
         )
@@ -1566,6 +1578,77 @@ const readPuntoHistorico = async(punto_id, historico_punto) => {
     })
 }
 
+const readEmpleadoCargo = async(rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT fk_cargo as cargo_id FROM "EMPLEADO_CARGO" WHERE fk_empleado=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const updateEmpleadoCargo = async(rif, cargo_id, fecha) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "EMPLEADO_CARGO" SET fecha_fin=$3 WHERE fk_empleado=$1 AND fk_cargo=$2',
+            [
+                rif,
+                cargo_id,
+                fecha
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const insertEmpleadoCargo = async(rif, cargo_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "EMPLEADO_CARGO" (fk_empleado, fk_cargo) VALUES ($1, $2)',
+            [
+                rif,
+                cargo_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const deleteEmpleadoCargo = async(rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "EMPLEADO_CARGO" WHERE fk_empleado=$1',
+            [
+                rif
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 module.exports = {
     //CRUD
     //Usuarios, natural, juridico, empleado, persona contacto
@@ -1671,6 +1754,13 @@ module.exports = {
     insertMonedaHistorico: insertMonedaHistorico,
     //PuntoHistorico
     readPuntoHistorico: readPuntoHistorico,
-    insertPuntoHistorico: insertPuntoHistorico
+    insertPuntoHistorico: insertPuntoHistorico,
+    //deleteProductoEnListaProducto
+    deleteProductoEnListaProducto: deleteProductoEnListaProducto,
+    //EmpleadoCargo
+    readEmpleadoCargo: readEmpleadoCargo,
+    insertEmpleadoCargo: insertEmpleadoCargo,
+    deleteEmpleadoCargo: deleteEmpleadoCargo,
+    updateEmpleadoCargo: updateEmpleadoCargo
 
 }
