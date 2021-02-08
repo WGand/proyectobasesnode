@@ -1820,6 +1820,29 @@ const postpruebaprueba = async(request, response) => {
   }
 }
 
+const ordenCajeroMasReciente = async(request, response) =>{
+  const{
+    rif,
+    tipo
+  } = request.body
+  pool.query(
+    'SELECT operacion_id FROM "OPERACION" WHERE fk_'+tipo+'=$1 ORDER BY fecha_orden DESC LIMIT 1',
+    [
+        rif
+    ],
+    (error, results) =>{
+        if(error){
+            throw error
+        }
+        response.status(201).json(results.rows[0])
+    }
+)
+}
+
+app
+  .route("/cajero")
+  .post(ordenCajeroMasReciente)
+
 app
   .route("/cargo")
   .post(postCargo)
