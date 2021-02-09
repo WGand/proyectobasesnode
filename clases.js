@@ -608,7 +608,7 @@ class Natural extends Usuario {
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 11){
+        if(Object.keys(usuario).length > 0){
             this.primer_nombre = usuario.primer_nombre
             this.segundo_nombre = usuario.segundo_nombre
             this.primer_apellido = usuario.primer_apellido
@@ -703,7 +703,7 @@ class Juridico extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 10){
+        if(Object.keys(usuario).length > 0){
             this.denominacion_comercial = usuario.denominacion_comercial
             this.correo_electronico = usuario.correo_electronico
             this.contrasena = usuario.contrasena
@@ -900,7 +900,7 @@ class Empleado extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 13){
+        if(Object.keys(usuario).length > 0){
             this.primer_nombre = usuario.primer_nombre
             this.segundo_nombre = usuario.segundo_nombre
             this.primer_apellido = usuario.primer_apellido
