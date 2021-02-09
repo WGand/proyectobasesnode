@@ -898,7 +898,7 @@ class Empleado extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
-        if(Object.keys(usuario).length == 14){
+        if(Object.keys(usuario).length == 13){
             this.primer_nombre = usuario.primer_nombre
             this.segundo_nombre = usuario.segundo_nombre
             this.primer_apellido = usuario.primer_apellido

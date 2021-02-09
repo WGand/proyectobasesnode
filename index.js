@@ -74,7 +74,7 @@ var storage = multer.diskStorage({ //multers disk storage settings
         var datetimestamp = Date.now();
         cb(null,file.originalname)
     }
-});
+  });
 var upload = multer({ //multer settings
                 storage: storage
             }).single('file');
