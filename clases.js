@@ -3,7 +3,7 @@ const {
     insertUsuarioNatural, updateUsuarioNatural, deleteUsuarioNatural, readUsuario, readUsuarioLogin,
     insertPersonaContacto, updatePersonaContacto, deletePersonaContacto, readPersonaContacto,
     insertUsuarioJuridico, updateUsuarioJuridico, deleteUsuarioJuridico,
-    insertUsuarioEmpleado, updateUsuarioEmpleado, deleteUsuarioEmpleado,
+    insertUsuarioEmpleado, updateUsuarioEmpleado, deleteUsuarioEmpleado, updateUsuarioEmpleadoTienda,
     insertTelefono, readTelefono, updateTelefono, deleteTelefono, readCelular,
     insertEmpleadoHorario, deleteEmpleadoHorario, readEmpleadoHorario,
     insertProducto, readProductoId, readProductoSinId, updateProducto, deleteProducto,
@@ -21,9 +21,13 @@ const {
     insertProveedor, deleteProveedor,
     readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, 
     readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa,
-    deleteProductoEnListaProducto
+    deleteProductoEnListaProducto,
+    readTienda, updateTienda, insertTienda, deleteTienda, readTiendaTodas, readTiendaId,
+    readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario,
+    readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
+    deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona,
+    readZona, readProductos, insertZonaPasillo
     } = require('./queries')
-
 
 class Validador{
     obtenerHora(){
@@ -898,6 +902,15 @@ class Empleado extends Usuario{
         this.telefono
         this.horario
     }
+    async asignarTienda(tienda_id){
+        if(await updateUsuarioEmpleadoTienda(tienda_id, this.rif)){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
         if(Object.keys(usuario).length > 0){
@@ -1291,6 +1304,130 @@ class Estatus{
     }
 }
 
+class Tienda{
+    constructor(nombre, parroquia, municipio, estado){
+        this.id
+        this.nombre = nombre
+        this.parroquia = parroquia
+        this.municipio = municipio
+        this.estado = estado
+        this.zona = []
+    }
+    async buscarTiendaConId(){
+        if(await readTiendaId(this.id) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async actualizarTienda(){
+        if(await updateTienda(this.nombre, this.id) == 1){
+            await readTienda()
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async buscarTodas(){
+        return await readTiendaTodas()
+    }
+
+    async actualizarCantidadAlmacen(producto){
+        let product = JSON.parse(producto)
+        for(let i=0; i<Object.keys(product).length; i++){
+            await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id) //reponer inventario con el resultado, remember
+        }
+    }
+
+    async actualizarCantidadPasillo(producto){
+        let product = JSON.parse(producto)
+        for(let i=0; i< Object.keys(product).length; i++){
+            await updatePasilloCantidad(product[i].cantidad, product[i].id, this.id) //reponer inventario pasillo con el resultado, remember
+        }
+    }
+
+    async checkCantidadOrden(producto){
+        let product = JSON.parse(producto)
+        for(let i=0; i< Object.keys(product).length; i++){
+          if(!(await this.hayInventarioAlmacen(product[i].id, product[i].cantidad))){
+              return false
+          }
+        }
+        return true
+    }
+
+    async hayInventarioAlmacen(producto_id, producto_cantidad){
+        let cantidad = await readAlmacenInventario(this.id, producto_id)
+        if(cantidad.length > 0){
+            if(parseInt(cantidad[0].cantidad) >= parseInt(producto_cantidad)){
+                return true
+            }
+            else{
+                return false
+            }
+        }
+    }
+
+    async tiendaExiste(){
+        if((await readTienda(this.nombre)).length > 0){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async buscarTienda(){
+        this.id = (await readTienda(this.nombre))[0].tienda_id
+    }
+
+    async crearInventario(){
+        let productos = await readProductos()
+        await this.buscarTienda()
+        for(let i=0; i<productos.length; i++){
+            await this.insertarInventario(this.id, productos[i].producto_id, productos[i].categoria)
+        }
+    }
+
+    async insertarInventario(tienda_id, producto_id, categoria){
+        let almacen_id = (await insertAlmacen('100000', tienda_id, producto_id))[0].almacen_id
+        let pasillo_id = (await insertPasillo('50', tienda_id, producto_id))[0].pasillo_id
+        let zona_id = (await readZona(categoria))[0].zona_id
+        if(await insertZonaPasillo(pasillo_id, zona_id) == 1 && await insertAlmacenZona(almacen_id, zona_id) == 1){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async insertarTienda(){
+        if(await insertTienda(this.nombre, this.parroquia, this.municipio, this.estado)){
+            return true
+        }
+        else{
+            return false
+        }
+    }
+
+    async eliminarTienda(){
+        await this.buscarTienda()
+        let almacenes = await readAlmacen(this.id)
+        let pasillos = await readPasillo(this.id)
+        for(let i=0; i<pasillos.length; i++){
+            await deleteAlmacenZona(almacenes[i].almacen_id)
+            await deleteZonaPasillo(pasillos[i].pasillo_id)
+        }
+        await deleteAlmacen(this.id)
+        await deletePasillo(this.id)
+        await deleteTienda(this.id)
+    }
+}
+
 class Producto{
     constructor(id, imagen, nombre, precio, ucabmart, categoria){
         this.id = id
@@ -1342,6 +1479,7 @@ class Producto{
             return false
         }
     }
+
     async actualizarProducto(){
         if(await updateProducto(this) ==1){
             return true
@@ -1406,3 +1544,4 @@ exports.Operacion = Operacion
 exports.Estatus = Estatus
 exports.Usuario = Usuario
 exports.Punto = Punto
+exports.Tienda = Tienda

@@ -254,6 +254,24 @@ const updateUsuarioEmpleado = async(usuario) =>{
     })
 }
 
+const updateUsuarioEmpleadoTienda = async(tienda_id, rif) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "EMPLEADO" SET fk_tienda=$1 WHERE rif=$2',
+            [
+                tienda_id,
+                rif
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 const deleteUsuarioEmpleado = async(usuario) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -945,10 +963,24 @@ const deleteProveedor = async(proveedor) =>{
     })
 }
 
+const readProductos = async() => {
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "PRODUCTO"',
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
 const readProductoId = async(producto) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "PRODUCTO" where producto_id=$1',
+            'SELECT * FROM "PRODUCTO" WHERE producto_id=$1',
             [
                 producto.id
             ],
@@ -1653,8 +1685,7 @@ const insertTienda = async(nombre, parroquia, municipio, estado) => {
     return new Promise((resolve, reject) =>{
         pool.query(
             'INSERT INTO "TIENDA" (nombre, fk_lugar) VALUES ($1, (SELECT a.lugar_id FROM "LUGAR" a, "LUGAR" b, "LUGAR" c WHERE '+
-            'a.fk_lugar = b.lugar_id AND b.fk_lugar = c.lugar_id AND a.nombre = $2 AND b.nombre = $3 AND c.nombre = $4 ))'
-        )
+            'a.fk_lugar = b.lugar_id AND b.fk_lugar = c.lugar_id AND a.nombre = $2 AND b.nombre = $3 AND c.nombre = $4 ))',
         [
             nombre,
             parroquia,
@@ -1667,6 +1698,91 @@ const insertTienda = async(nombre, parroquia, municipio, estado) => {
             }
             resolve(results.rowCount)
         }
+        )
+    })
+}
+
+const readTiendaTodas = async() =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM TIENDA',
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readTiendaId = async(tienda_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "TIENDA" WHERE tienda_id=$1',
+            [
+                tienda_id
+            ],
+            (error, results)=>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readTienda = async(nombre) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "TIENDA" WHERE nombre=$1',
+            [
+                nombre
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readAlmacenInventario = async(tienda_id, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT cantidad FROM "ALMACEN" where fk_tienda=$1 AND fk_producto=$2',
+            [
+                tienda_id,
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const readPasilloInventario = async(tienda_id, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT cantidad FROM "PASILLO" where fk_tienda=$1 AND fk_producto=$2',
+            [
+                tienda_id,
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
     })
 }
 
@@ -1693,7 +1809,7 @@ const deleteTienda = async(tienda_id) =>{
         pool.query(
             'DELETE FROM "TIENDA" WHERE tienda_id=$1',
             [
-                tienda
+                tienda_id
             ],
             (error, results) =>{
                 if(error){
@@ -1705,12 +1821,29 @@ const deleteTienda = async(tienda_id) =>{
     })
 }
 
-const readAlmacen = async(nombre, tienda_id, producto_id) =>{
+const readAlmacen = async(tienda_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT almacen_id FROM "ALMACEN" WHERE nombre=$1 AND fk_tienda=$2 AND fk_producto=$3',
+            'SELECT almacen_id FROM "ALMACEN" WHERE fk_tienda=$1',
             [
-                nombre,
+                tienda_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertAlmacen = async(cantidad, tienda_id, producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "ALMACEN" (cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3) RETURNING ALMACEN_ID',
+            [
+                cantidad,
                 tienda_id,
                 producto_id
             ],
@@ -1724,30 +1857,10 @@ const readAlmacen = async(nombre, tienda_id, producto_id) =>{
     })
 }
 
-const insertAlmacen = async(nombre, cantidad, tienda_id, producto_id) =>{
-    return new Promise((resolve, reject) =>{
-        pool.query(
-            'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3, $4)',
-            [
-                nombre,
-                cantidad,
-                tienda_id,
-                producto_id
-            ],
-            (error, results) =>{
-                if(error){
-                    reject(error)
-                }
-                resolve(results.rowCount)
-            }
-        )
-    })
-}
-
 const updateAlmacenCantidad = async(cantidad, fk_tienda, fk_producto) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "ALMACEN" SET cantidad=$1 WHERE fk_tienda=$2 AND fk_producto=$3',
+            'UPDATE "ALMACEN" SET cantidad=cantidad- $1 WHERE fk_tienda=$2 AND fk_producto=$3 RETURNING cantidad',
             [
                 cantidad,
                 fk_tienda,
@@ -1757,7 +1870,7 @@ const updateAlmacenCantidad = async(cantidad, fk_tienda, fk_producto) =>{
                 if(error){
                     reject(error)
                 }
-                resolve(results.rowCount)
+                resolve(results.rows)
             }
         )
     })
@@ -1797,10 +1910,13 @@ const deleteAlmacen = async(tienda_id) => {
     })
 }
 
-const readZona = async() =>{
+const readZona = async(tipo) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "ZONA"',
+            'SELECT zona_id FROM "ZONA" WHERE tipo=$1',
+            [
+                tipo
+            ],
             (error, results)=>{
                 if(error){
                     reject(error)
@@ -1811,12 +1927,11 @@ const readZona = async() =>{
     })
 }
 
-const insertPasillo = async(nombre, cantidad, tienda_id, producto_id) =>{
+const insertPasillo = async(cantidad, tienda_id, producto_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'INSERT INTO "PASILLO" (nombre, cantidad, fk_tienda, producto_id) VALUES ($1, $2, $3, $4)',
+            'INSERT INTO "PASILLO" (cantidad, fk_tienda, fk_producto) VALUES ($1, $2, $3) RETURNING pasillo_id',
             [
-                nombre,
                 cantidad,
                 tienda_id,
                 producto_id
@@ -1825,7 +1940,7 @@ const insertPasillo = async(nombre, cantidad, tienda_id, producto_id) =>{
                 if(error){
                     reject(error)
                 }
-                resolve(results.rowCount)
+                resolve(results.rows)
             }
         )
     })
@@ -1834,7 +1949,7 @@ const insertPasillo = async(nombre, cantidad, tienda_id, producto_id) =>{
 const readPasillo = async(tienda_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM "PASILLO" WHERE fk_tienda=$1',
+            'SELECT pasillo_id FROM "PASILLO" WHERE fk_tienda=$1',
             [
                 tienda_id
             ],
@@ -1851,7 +1966,7 @@ const readPasillo = async(tienda_id) =>{
 const updatePasilloCantidad = async(cantidad, producto_id, tienda_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "PASILLO" SET cantidad=$1 WHERE fk_producto=$2 AND fk_tienda=$3',
+            'UPDATE "PASILLO" SET cantidad=cantidad-$1 WHERE fk_producto=$2 AND fk_tienda=$3 RETURNING cantidad',
             [
                 cantidad,
                 producto_id,
@@ -1861,7 +1976,7 @@ const updatePasilloCantidad = async(cantidad, producto_id, tienda_id) =>{
                 if(error){
                     reject(error)
                 }
-                resolve(results.rowCount)
+                resolve(results.rows)
             }
         )
     })
@@ -1872,7 +1987,7 @@ const deletePasillo = async(tienda_id) =>{
         pool.query(
             'DELETE FROM "PASILLO" WHERE fk_tienda=$1',
             [
-                tienda
+                tienda_id
             ],
             (error, results) =>{
                 if(error){
@@ -1902,12 +2017,12 @@ const insertZonaPasillo = async(tienda_id, zona_id) =>{
     })
 }
 
-const deleteZonaPasillo = async(tienda_id) => {
+const deleteZonaPasillo = async(pasillo_id) => {
     return new Promise((resolve, reject) =>{
         pool.query(
-            'DELETE FROM "ZONA_PASILLO" WHERE fk_tienda=$1',
+            'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo=$1',
             [
-                tienda_id
+                pasillo_id
             ],
             (error, results) =>{
                 if(error){
@@ -1918,6 +2033,60 @@ const deleteZonaPasillo = async(tienda_id) => {
         )
     })
 }
+
+const insertAlmacenZona = async(almacen_id, zona_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "ALMACEN_ZONA" (fk_zona, fk_almacen) VALUES ($1, $2)',
+            [
+                zona_id,
+                almacen_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const readAlmacenZona = async(almacen_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "ALMACEN_ZONA" WHERE fk_almacen=$1',
+            [
+                almacen_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const deleteAlmacenZona = async(almacen_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen=$1',
+            [
+                almacen_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+
 
 module.exports = {
     //CRUD
@@ -1933,6 +2102,7 @@ module.exports = {
     updatePersonaContacto: updatePersonaContacto,
     insertUsuarioJuridico: insertUsuarioJuridico,
     updateUsuarioJuridico: updateUsuarioJuridico,
+    updateUsuarioEmpleadoTienda: updateUsuarioEmpleadoTienda,
     deleteUsuarioJuridico: deleteUsuarioJuridico,
     insertUsuarioEmpleado: insertUsuarioEmpleado,
     updateUsuarioEmpleado: updateUsuarioEmpleado,
@@ -1962,6 +2132,7 @@ module.exports = {
     //producto
     readProductoId: readProductoId,
     readProductoSinId: readProductoSinId,
+    readProductos: readProductos,
     insertProducto: insertProducto,
     updateProducto: updateProducto,
     deleteProducto: deleteProducto,
@@ -2031,5 +2202,34 @@ module.exports = {
     readEmpleadoCargo: readEmpleadoCargo,
     insertEmpleadoCargo: insertEmpleadoCargo,
     deleteEmpleadoCargo: deleteEmpleadoCargo,
-    updateEmpleadoCargo: updateEmpleadoCargo
+    updateEmpleadoCargo: updateEmpleadoCargo,
+    //Tienda
+    readTiendaId: readTiendaId,
+    readTienda: readTienda,
+    readTiendaTodas: readTiendaTodas,
+    updateTienda: updateTienda,
+    insertTienda: insertTienda,
+    deleteTienda: deleteTienda,
+    //Almacen
+    readAlmacenInventario:readAlmacenInventario,
+    readAlmacen: readAlmacen,
+    insertAlmacen: insertAlmacen,
+    updateAlmacenCantidad: updateAlmacenCantidad,
+    deleteAlmacen: deleteAlmacen,
+    deleteAlmacenProducto: deleteAlmacenProducto,
+    //Pasillo
+    readPasilloInventario: readPasilloInventario,
+    readPasillo: readPasillo,
+    insertPasillo: insertPasillo,
+    updatePasilloCantidad: updatePasilloCantidad,
+    deletePasillo: deletePasillo,
+    //ZonaPasillo
+    deleteZonaPasillo: deleteZonaPasillo,
+    insertZonaPasillo: insertZonaPasillo,
+    //AlmacenZona
+    insertAlmacenZona: insertAlmacenZona,
+    deleteAlmacenZona: deleteAlmacenZona,
+    readAlmacenZona: readAlmacenZona,
+    //Zona
+    readZona: readZona
 }

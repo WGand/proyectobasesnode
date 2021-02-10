@@ -7,7 +7,7 @@ const fs = require("fs");
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
 const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
-  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto} = require('./clases');
+  PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto, Tienda} = require('./clases');
 const { response } = require("express");
 const { Console } = require("console");
 const e = require("express");
@@ -804,10 +804,13 @@ const postEmpleado = async (request, response) => {
     prefijo_telefono,
     celular,
     prefijo_celular,
-    horario
+    horario,
+    tienda_id
   } = request.body;
-  if(Object.keys(request.body).length == 17){
-    if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0){
+  if(Object.keys(request.body).length > 0){
+    let tienda = new Tienda()
+    tienda.id = tienda_id
+    if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 && (await tienda.buscarTiendaConId())){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
       let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
       let usuario = new Empleado(rif, correo_electronico, contrasena, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, cedula, tipo_cedula)
@@ -819,6 +822,7 @@ const postEmpleado = async (request, response) => {
       if(!(await validador.existeRif(usuario.rif, usuario.tipo_usuario_tabla)) && !(await validador.existeCorreo(usuario.rif, usuario.tipo_usuario_tabla))){
         if((await usuario.insertarUsuario()) == 1 && (await usuario.telefono.insertarTelefono(usuario.rif, usuario.tipo_usuario)) == 1 &&
         (await usuario.telefono.insertarCelular(usuario.rif, usuario.tipo_usuario)) == 1 && (await hora.insertarEmpleadoHorario(rif, contenedor.contenedor))){
+          await usuario.asignarTienda(tienda_id)
           response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
         }
         else{
@@ -1186,287 +1190,6 @@ const getTodos = async (request, response) => {
   )
 }
 
-const postTienda = async (request, response) =>{
-  const{
-    nombre,
-    fk_lugar
-  } = request.body
-  var tienda_id, zona_id, pasillo_id
-  if(nombre != '' && fk_lugar != ''){
-    pool.query(
-      'SELECT * FROM "TIENDA" WHERE nombre = $1',
-      [
-        nombre
-      ],
-      (error, results) => {
-        if (error) {
-          throw error;
-        }
-        if(results.rowCount == 0){
-          pool.query(
-            'INSERT INTO "TIENDA" (nombre, fk_lugar) VALUES ($1, $2) RETURNING tienda_id',
-            [
-              nombre,
-              fk_lugar
-            ],
-            (error, results) => {
-              if (error) {
-                throw error;
-              }
-              tienda_id = results.rows[0]['tienda_id']
-              pool.query(
-                'INSERT INTO "ALMACEN" (nombre, cantidad, fk_tienda) VALUES ($1, $2, $3)',
-                [
-                  'o',
-                  100,
-                  tienda_id
-                ],
-                (error, results) => {
-                  if (error) {
-                    throw error;
-                  }
-                  pool.query(
-                    'INSERT INTO "ZONA" (nombre) VALUES ($1) RETURNING zona_id ',
-                    [
-                      'D'
-                    ],
-                    (error, results) => {
-                      if (error) {
-                        throw error;
-                      }
-                      zona_id = results.rows[0]['zona_id']
-                      pool.query(
-                        'INSERT INTO "ALMACEN_ZONA" (tipo, fk_zona, fk_almacen) VALUES ($1, $2, $3)',
-                        [
-                          'REFRIGERADOS',
-                          zona_id,
-                          tienda_id
-        
-                        ],
-                        (error, results) => {
-                          if (error) {
-                            throw error;
-                          }
-                          pool.query(
-                            'INSERT INTO "PASILLO" (nombre) VALUES ($1) RETURNING pasillo_id',
-                            [
-                              'F'
-                            ],
-                            (error, results) => {
-                              if (error) {
-                                throw error;
-                              }
-                              pasillo_id = results.rows[0]['pasillo_id']
-                              pool.query(
-                                'INSERT INTO "ZONA_PASILLO" (cantidad, fk_zona, fk_pasillo) VALUES ($1, $2, $3)',
-                                [
-                                  100,
-                                  zona_id,
-                                  pasillo_id
-                                ],
-                                (error, results) => {
-                                  if (error) {
-                                    throw error;
-                                  }
-                                  response.status(201).json({message: "funciono"})
-                                }
-                              )
-                            }
-                          )
-                        }
-                      )
-                    }
-                  )
-                }
-              )
-            }
-          )
-        }
-        else{
-          response.status(201).json([])
-        }
-      }
-    )
-  }
-  else{
-    response.status(201).json([])
-  }
-}
-
-const deleteTienda = async (request, response) =>{
-  const{
-    nombre
-  } = request.body
-  var tienda_id, zona_id, pasillo_id
-  pool.query(
-    'SELECT * FROM "TIENDA" WHERE nombre=$1',
-    [
-      nombre
-    ],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      if(results.rowCount == 1){
-        tienda_id = results.rows[0]['tienda_id']
-
-        pool.query(
-          'SELECT * FROM "ALMACEN_ZONA" WHERE fk_almacen = $1',
-          [
-            tienda_id
-          ],
-          (error, results) => {
-            if (error) {
-              throw error;
-            }
-            zona_id = results.rows[0]['fk_zona']
-            pool.query(
-              'SELECT * FROM "ZONA_PASILLO" WHERE fk_zona = $1',
-              [
-                zona_id
-              ],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-                pasillo_id = results.rows[0]['fk_pasillo']
-                pool.query(
-                  'DELETE FROM "ALMACEN_ZONA" WHERE fk_almacen = $1 AND fk_zona=$2',
-                  [
-                    tienda_id,
-                    zona_id
-                  ],
-                  (error, results) => {
-                    if (error) {
-                      throw error;
-                    }
-                    pool.query(
-                      'DELETE FROM "ZONA_PASILLO" WHERE fk_pasillo = $1 and fk_zona=$2',
-                      [
-                        pasillo_id,
-                        zona_id
-                      ],
-                      (error, results) => {
-                        if (error) {
-                          throw error;
-                        }
-                        pool.query(
-                          'DELETE FROM "PASILLO" WHERE pasillo_id = $1',
-                          [
-                            pasillo_id
-                          ],
-                          (error, results) => {
-                            if (error) {
-                              throw error;
-                            }
-                            pool.query(
-                              'DELETE FROM "ZONA" WHERE zona_id = $1',
-                              [
-                                zona_id
-                              ],
-                              (error, results) => {
-                                if (error) {
-                                  throw error;
-                                }
-                                pool.query(
-                                  'DELETE FROM "ALMACEN" WHERE fk_tienda = $1',
-                                  [
-                                    tienda_id
-                                  ],
-                                  (error, results) => {
-                                    if (error) {
-                                      throw error;
-                                    }
-                                    pool.query(
-                                      'DELETE FROM "TIENDA" WHERE tienda_id = $1',
-                                      [
-                                        tienda_id
-                                      ],
-                                      (error, results) => {
-                                        if (error) {
-                                          throw error;
-                                        }
-                                        response.status(201).json({message:'todo bien'})
-                                      }
-                                    )
-                                  }
-                                )
-                              }
-                            )
-                          }
-                        )
-                      }
-                    )  
-                  }
-                )
-              }
-            )
-          }
-        )
-      }
-      else{
-        response.status(201).json([])
-      }
-    }
-  )
-}
-
-const updateTienda = async (request, response) =>{
-  const{
-    nombre_antiguo,
-    nombre_nuevo
-  } = request.body
-  if(nombre_antiguo != '' && nombre_nuevo != ''){
-    pool.query(
-      'SELECT * FROM "TIENDA" WHERE nombre=$1',
-      [
-        nombre_antiguo
-      ],
-      (error, results) => {
-        if (error) {
-          throw error;
-        }
-        if(results.rowCount == 1){
-          pool.query(
-            'SELECT * FROM "TIENDA" SET WHERE nombre=$1',
-            [
-              nombre_nuevo
-            ],
-            (error, results) => {
-              if (error) {
-                throw error;
-              }
-              if(results.rowCount == 0){
-                pool.query(
-                  'UPDATE "TIENDA" SET nombre=$1 WHERE nombre =$2',
-                  [
-                    nombre_nuevo,
-                    nombre_antiguo
-                  ],
-                  (error, results) => {
-                    if (error) {
-                      throw error;
-                    }
-                    response.status(201).json({message:"listo"})
-                  }
-                )
-              }
-              else{
-                response.status(201).json([])
-              }
-            }
-          )
-        }
-        else{
-          response.status(201).json([])
-        }
-      }
-    )
-  }else{
-    response.status(201).json([])
-  }
-}
-
 const getTienda = async(request, response) => {
   pool.query(
     'SELECT * FROM "TIENDA"',
@@ -1480,6 +1203,61 @@ const getTienda = async(request, response) => {
       response.status(201).json(results.rows)
     }
   )
+}
+
+const postTienda = async(request, response) =>{
+  const{
+    nombre,
+    parroquia,
+    municipio,
+    estado
+  } = request.body
+  let lugar = new Lugar(parroquia, municipio, estado)
+  let tienda = new Tienda(nombre, parroquia, municipio, estado)
+  if(await validador.existeLugar(lugar)==1 && nombre != '' && !(await tienda.tiendaExiste())){
+    await tienda.insertarTienda()
+    await tienda.crearInventario()
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const updateTienda = async(request, response) =>{
+  const{
+    nombre,
+    tienda_id
+  } = request.body
+  let tienda = new Tienda(nombre)
+  if(!(await tienda.tiendaExiste())){
+    let tiendaCambiada = new Tienda(nombre)
+    tiendaCambiada.id = tienda_id
+    if(await tiendaCambiada.actualizarTienda()){
+      response.status(201).json({ status: "Funciono", message: "Registro exitoso"})
+    }
+    else{
+      response.status(201).json([])
+    }
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const deleteTienda = async(request, response) =>{
+  const{
+    nombre
+  } = request.body
+  let tienda = new Tienda(nombre)
+  if(await tienda.tiendaExiste()){
+    tienda.id = tienda_id
+    await tienda.eliminarTienda()
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
 }
 
 const postValidarTienda = async(request, response) => {
@@ -1549,6 +1327,8 @@ const productosOrdenados = async(request, response) =>{
 const postOrden = async(request, response) => {
   const {
     producto,
+    tienda_id,
+    tipo_compra,
     rif,
     fecha,
     monto_total,
@@ -1556,6 +1336,8 @@ const postOrden = async(request, response) => {
   } = request.body
   let contenedor = new Contenedor()
   let usuarioGenerico = new Usuario()
+  let tienda = new Tienda()
+  tienda.id = tienda_id
   let usuario = await usuarioGenerico.crearUsuario(tipo)
   if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
     let operacion = new Operacion('', fecha, monto_total, '')
@@ -1564,6 +1346,12 @@ const postOrden = async(request, response) => {
     await estadoPendiente.buscarEstado()
     await operacion.insertarOperacionEstatus(estadoPendiente)
     await operacion.insertarOrden(contenedor.contenedor)
+    if(tipo_compra == 'presencial'){
+      await tienda.actualizarCantidadPasillo(producto)
+    }
+    else if(tipo_compra == 'en linea'){
+      await tienda.actualizarCantidadAlmacen(producto)
+    }
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
@@ -1682,6 +1470,25 @@ const puntosUsuario = async(request, response) =>{
   }
 }
 
+const ordenCajeroMasReciente = async(request, response) =>{
+  const{
+    rif,
+    tipo
+  } = request.body
+  pool.query(
+    'SELECT operacion_id FROM "OPERACION" WHERE fk_'+tipo+'=$1 ORDER BY fecha_orden DESC LIMIT 1',
+    [
+        rif
+    ],
+    (error, results) =>{
+        if(error){
+            throw error
+        }
+        response.status(201).json(results.rows[0])
+    }
+  )
+}
+
 const cambioPunto = async(request, response) =>{
   let precio = new Promise((resolve, reject) =>{
       pool.query(
@@ -1796,47 +1603,66 @@ const updateCargo = async(request, response) =>{
   }
 }
 
-const postpruebaprueba = async(request, response) => {
+const inventarioTienda = async(request, response) =>{
   const{
-    rif,
-    cargo_viejo,
-    cargo_nuevo
-  } = request.body
-  let usuario = new Empleado()
-  if(await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-    usuario.rif = rif
-    let arreglo_viejo = JSON.parse(cargo_viejo)
-    let arreglo_nuevo = JSON.parse(cargo_nuevo)
-    for(let i=0; i<Object.keys(arreglo_viejo).length; i++){
-      await usuario.actualizarEmpleadoCargo(arreglo_viejo[i].id, validador.obtenerHora())
-    }
-    for(let i=0; i<Object.keys(arreglo_nuevo).length; i++){
-      await usuario.insertarEmpleadoCargo(arreglo_nuevo[i].id)
-    }
-    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
-  }
-  else{
-    response.status(201).json([])
-  }
-}
-
-const ordenCajeroMasReciente = async(request, response) =>{
-  const{
-    rif,
-    tipo
+    tienda_id
   } = request.body
   pool.query(
-    'SELECT operacion_id FROM "OPERACION" WHERE fk_'+tipo+'=$1 ORDER BY fecha_orden DESC LIMIT 1',
+    'SELECT DISTINCT t.tienda_id as ID, t.nombre,  p.cantidad as cantidad_pasillo, p.fk_producto as producto_id, a.cantidad as cantidad_almacen,'+
+    'a.fk_producto as producto_id FROM "TIENDA" T INNER JOIN "ALMACEN" A ON '+
+    't.tienda_id=a.fk_tienda INNER JOIN "PASILLO" P ON t.tienda_id=p.fk_tienda WHERE T.tienda_id = tienda_id',
     [
-        rif
+      tienda_id
     ],
     (error, results) =>{
         if(error){
             throw error
         }
-        response.status(201).json(results.rows[0])
+        console.log(results.rows.length)
+        response.status(201).json(results.rows)
     }
-)
+  )
+}
+
+const postpruebaprueba = async(request, response) => {
+  const {
+    producto,
+    tienda_id,
+    rif,
+    fecha,
+    monto_total,
+    tipo// natural, empleado, juridico
+  } = request.body
+  let tienda = new Tienda()
+  tienda.id = tienda_id
+  if(await tienda.checkCantidadOrden(producto)){
+    //await tienda.actualizarCantidadAlmacen(producto)
+    await tienda.actualizarCantidadPasillo(producto)
+  }
+  else{
+    console.log('no hay stock')
+  }
+  
+
+  
+  //let contenedor = new Contenedor()
+  //let usuarioGenerico = new Usuario()
+  //let usuario = await usuarioGenerico.crearUsuario(tipo)
+  //if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
+  //  let operacion = new Operacion('', fecha, monto_total, '')
+  //  let estadoPendiente = new Estatus('', 'Pendiente')
+  //  await operacion.insertarOperacion(usuario.tipo_usuario, rif)
+  //  await estadoPendiente.buscarEstado()
+  //  await operacion.insertarOperacionEstatus(estadoPendiente)
+  //  await operacion.insertarOrden(contenedor.contenedor)
+  //  response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  //}
+  //else{
+  //  response.status(201).json([])
+  //}
+
+  
+
 }
 
 app
@@ -1919,7 +1745,7 @@ app
 app 
   .route("/inventario")
   .get(getTienda)
-  .post(postInventario)
+  .post(inventarioTienda)
 
 app
   .route("/tienda")
