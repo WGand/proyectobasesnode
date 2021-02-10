@@ -30,6 +30,23 @@ const {
     } = require('./queries')
 
 class Validador{
+    obtenerHoraEntrega(){
+        let today = new Date();
+        let dd = today.getDate() + 5;
+        let mm = today.getMonth()+1; 
+        const yyyy = today.getFullYear();
+        if(dd<10) 
+        {
+            dd=`0${dd}`;
+        } 
+    
+        if(mm<10) 
+        {
+            mm=`0${mm}`;
+        } 
+        today = `${yyyy}-${mm}-${dd}`
+        return today
+    }
     obtenerHora(){
         let today = new Date();
         let dd = today.getDate();
@@ -1246,6 +1263,7 @@ class Operacion{
     }
 
     async actualizarOperacion(){
+        this.fecha_entrega = validador.obtenerHoraEntrega()
         await updateOperacion(this)
     }
     async insertarOrden(listaProducto){
@@ -1313,6 +1331,10 @@ class Tienda{
         this.estado = estado
         this.zona = []
     }
+    async reponerInventarioPasillo(){
+
+    }
+
     async buscarTiendaConId(){
         if(await readTiendaId(this.id) == 1){
             return true
@@ -1324,7 +1346,6 @@ class Tienda{
 
     async actualizarTienda(){
         if(await updateTienda(this.nombre, this.id) == 1){
-            await readTienda()
             return true
         }
         else{

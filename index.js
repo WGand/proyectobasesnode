@@ -1381,6 +1381,7 @@ const ordenPaga = async(request, response) =>{
     let estado = await operacion.buscarEstadoOperacion()
     if(estado == 1){
       await operacion.actualizarOperacionEstatus(estadoPagado)
+      await operacion.actualizarOperacion()
       await contenedor.insertarMetodos(usuario.rif, usuario.tipo_usuario)
       response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
     }
@@ -1633,15 +1634,7 @@ const postpruebaprueba = async(request, response) => {
     monto_total,
     tipo// natural, empleado, juridico
   } = request.body
-  let tienda = new Tienda()
-  tienda.id = tienda_id
-  if(await tienda.checkCantidadOrden(producto)){
-    //await tienda.actualizarCantidadAlmacen(producto)
-    await tienda.actualizarCantidadPasillo(producto)
-  }
-  else{
-    console.log('no hay stock')
-  }
+  console.log(validador.obtenerHoraEntrega())
   
 
   
