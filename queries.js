@@ -1255,8 +1255,8 @@ const updateOperacionSinFecha = async(operacion) =>{
 const updateOperacion = async(operacion) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "OPERACION" SET monto_total='+
-            '(SELECT SUM(LP.CANTIDAD * P.PRECIO), fecha_entrega=$2 FROM "LISTA_PRODUCTO" LP, "PRODUCTO" P WHERE LP.fk_operacion=$1 AND lp.fk_producto = P.producto_id)'+
+            'UPDATE "OPERACION" SET fecha_entrega=$2, monto_total='+
+            '(SELECT SUM(LP.CANTIDAD * P.PRECIO) FROM "LISTA_PRODUCTO" LP, "PRODUCTO" P WHERE LP.fk_operacion=$1 AND lp.fk_producto = P.producto_id)'+
             'WHERE operacion_id=$1',
             [
                 operacion.id,
@@ -1264,7 +1264,6 @@ const updateOperacion = async(operacion) =>{
             ],
             (error, results) =>{
                 if(error){
-                    console.log(error)
                     reject(error)
                 }
                 resolve(results.rowCount)
