@@ -1605,22 +1605,39 @@ const updateCargo = async(request, response) =>{
 
 const inventarioTienda = async(request, response) =>{
   const{
-    tienda_id
+    tienda_id,
+    tipo
   } = request.body
-  pool.query(
-    'SELECT DISTINCT t.tienda_id as ID, t.nombre,  p.cantidad as cantidad_pasillo, p.fk_producto as producto_id, a.cantidad as cantidad_almacen,'+
-    'a.fk_producto as producto_id FROM "TIENDA" T INNER JOIN "ALMACEN" A ON '+
-    't.tienda_id=a.fk_tienda INNER JOIN "PASILLO" P ON t.tienda_id=p.fk_tienda WHERE T.tienda_id = tienda_id',
-    [
-      tienda_id
-    ],
-    (error, results) =>{
-        if(error){
-            throw error
-        }
-        response.status(201).json(results.rows)
-    }
-  )
+  if(tipo == 'presencial'){
+    pool.query(
+      'SELECT DISTINCT t.tienda_id as ID, t.nombre, p.cantidad as cantidad_pasillo, p.fk_producto as producto_id '+
+      'FROM "TIENDA" T, "PASILLO" P WHERE t.tienda_id=p.fk_tienda AND t.tienda_id=$1'
+      [
+        tienda_id
+      ],
+      (error, results) =>{
+          if(error){
+              throw error
+          }
+          response.status(201).json(results.rows)
+      }
+    )
+  }
+  else if(tipo == 'en linea'){
+    pool.query(
+      'SELECT DISTINCT t.tienda_id as ID, t.nombre, a.cantidad as cantidad_almacen, a.fk_producto as producto_id '+
+      'FROM "TIENDA" T, "ALMACEN" A WHERE t.tienda_id=a.fk_tienda AND t.tienda_id=$1',
+      [
+        tienda_id
+      ],
+      (error, results) =>{
+          if(error){
+              throw error
+          }
+          response.status(201).json(results.rows)
+      }
+    )
+  }
 }
 
 const reposicionInventarioPasillo = async(request, response) => {
@@ -1688,6 +1705,10 @@ const postpruebaprueba = async(request, response) => {
   
 
 }
+
+app
+  .route("/reponerInventarioPasillo")
+  .post(reponerInventarioPasillo)
 
 app
   .route("/reposicionInventarioPasillo")
