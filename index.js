@@ -1251,7 +1251,6 @@ const deleteTienda = async(request, response) =>{
   } = request.body
   let tienda = new Tienda(nombre)
   if(await tienda.tiendaExiste()){
-    tienda.id = tienda_id
     await tienda.eliminarTienda()
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
@@ -1629,12 +1628,10 @@ const postpruebaprueba = async(request, response) => {
   const {
     producto,
     tienda_id,
-    rif,
-    fecha,
-    monto_total,
-    tipo// natural, empleado, juridico
   } = request.body
-  console.log(validador.obtenerHoraEntrega())
+  let tienda = new Tienda()
+  tienda.id = tienda_id
+      await tienda.actualizarCantidadPasillo(producto)
   
 
   

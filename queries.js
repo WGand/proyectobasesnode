@@ -1861,7 +1861,7 @@ const insertAlmacen = async(cantidad, tienda_id, producto_id) =>{
 const updateAlmacenCantidad = async(cantidad, fk_tienda, fk_producto) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "ALMACEN" SET cantidad=cantidad- $1 WHERE fk_tienda=$2 AND fk_producto=$3 RETURNING cantidad',
+            'UPDATE "ALMACEN" SET cantidad=cantidad- $1 WHERE fk_tienda=$2 AND fk_producto=$3 RETURNING *',
             [
                 cantidad,
                 fk_tienda,
@@ -1964,10 +1964,22 @@ const readPasillo = async(tienda_id) =>{
     })
 }
 
+const updatePasilloInventario = async(producto_id, tienda_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "PASILLO" SET cantidad=50 WHERE fk_producto=$1 AND fk_tienda=$2',
+            [
+                producto_id,
+                tienda_id
+            ]
+        )
+    })
+}
+
 const updatePasilloCantidad = async(cantidad, producto_id, tienda_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "PASILLO" SET cantidad=cantidad-$1 WHERE fk_producto=$2 AND fk_tienda=$3 RETURNING cantidad',
+            'UPDATE "PASILLO" SET cantidad=cantidad-$1 WHERE fk_producto=$2 AND fk_tienda=$3 RETURNING *',
             [
                 cantidad,
                 producto_id,
@@ -2086,7 +2098,6 @@ const deleteAlmacenZona = async(almacen_id) =>{
         )
     })
 }
-
 
 
 module.exports = {
@@ -2222,6 +2233,7 @@ module.exports = {
     readPasilloInventario: readPasilloInventario,
     readPasillo: readPasillo,
     insertPasillo: insertPasillo,
+    updatePasilloInventario: updatePasilloInventario,
     updatePasilloCantidad: updatePasilloCantidad,
     deletePasillo: deletePasillo,
     //ZonaPasillo

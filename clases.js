@@ -26,7 +26,7 @@ const {
     readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario,
     readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
     deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona,
-    readZona, readProductos, insertZonaPasillo
+    readZona, readProductos, insertZonaPasillo, updatePasilloInventario
     } = require('./queries')
 
 class Validador{
@@ -1331,8 +1331,16 @@ class Tienda{
         this.estado = estado
         this.zona = []
     }
-    async reponerInventarioPasillo(){
+    async reponerInventarioAlmacen(almacen){
 
+    }
+
+    async reponerInventarioPasillo(pasillo){
+        let almacen = await readAlmacenInventario(pasillo.fk_tienda, pasillo.fk_producto)
+        if(parseInt(almacen[0].cantidad) > 50){
+            await updatePasilloInventario(pasillo.fk_producto, pasillo.fk_tienda)
+            await updateAlmacenCantidad(50, pasillo.fk_tienda, pasillo.fk_producto)
+        }
     }
 
     async buscarTiendaConId(){
@@ -1360,14 +1368,20 @@ class Tienda{
     async actualizarCantidadAlmacen(producto){
         let product = JSON.parse(producto)
         for(let i=0; i<Object.keys(product).length; i++){
-            await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id) //reponer inventario con el resultado, remember
+            let almacen =await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id) //reponer inventario con el resultado, remember
+            if(almacen[0].cantidad < 100000){
+                await this.reponerInventarioAlmacen(almacen[0])
+            }
         }
     }
 
     async actualizarCantidadPasillo(producto){
         let product = JSON.parse(producto)
         for(let i=0; i< Object.keys(product).length; i++){
-            await updatePasilloCantidad(product[i].cantidad, product[i].id, this.id) //reponer inventario pasillo con el resultado, remember
+            let pasillo = await updatePasilloCantidad(product[i].cantidad, product[i].id, this.id) //reponer inventario pasillo con el resultado, remember
+            if(pasillo[0].cantidad < 20){
+                await this.reponerInventarioPasillo(pasillo[0])
+            }
         }
     }
 
