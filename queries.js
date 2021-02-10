@@ -1264,6 +1264,7 @@ const updateOperacion = async(operacion) =>{
             ],
             (error, results) =>{
                 if(error){
+                    console.log(error)
                     reject(error)
                 }
                 resolve(results.rowCount)
