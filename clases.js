@@ -27,7 +27,7 @@ const {
     readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario,
     readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
     deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona,
-    readZona, readProductos, insertZonaPasillo, updatePasilloInventario
+    readZona, readProductos, insertZonaPasillo, updatePasilloInventario, updateOperacionSinFecha
     } = require('./queries')
 
 class Validador{
@@ -1266,8 +1266,12 @@ class Operacion{
     async actualizarOperacion(tipo){
         if(tipo == 1){
             this.fecha_entrega = validador.obtenerHoraEntrega()
+            await updateOperacion(this)
         }
-        await updateOperacion(this)
+        else if(tipo == 0){
+            await updateOperacionSinFecha(this)
+        }
+        
     }
     async insertarOrden(listaProducto){
         for(let i=0; i< listaProducto.length; i++){
