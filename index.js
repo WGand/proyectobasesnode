@@ -1380,7 +1380,7 @@ const ordenPaga = async(request, response) =>{
     let estado = await operacion.buscarEstadoOperacion()
     if(estado == 1){
       await operacion.actualizarOperacionEstatus(estadoPagado)
-      await operacion.actualizarOperacion()
+      await operacion.actualizarOperacion(1)
       await contenedor.insertarMetodos(usuario.rif, usuario.tipo_usuario)
       response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
     }
@@ -1432,7 +1432,7 @@ const todosOrdenes = async(request, response) =>{
     for(let i=0; i< operacion.length; i++){
       opera.id = operacion[i].operacion_id
       if(await opera.buscarEstadoOperacion() == 1){
-        await opera.actualizarOperacion()
+        await opera.actualizarOperacion(0)
       }
     }
     await contenedorProductos.buscarTodosProductos(operacion)
@@ -1618,10 +1618,44 @@ const inventarioTienda = async(request, response) =>{
         if(error){
             throw error
         }
-        console.log(results.rows.length)
         response.status(201).json(results.rows)
     }
   )
+}
+
+const reposicionInventarioPasillo = async(request, response) => {
+  const{
+    tienda_id
+  } = request.body
+  pool.query(
+    'SELECT A.CANTIDAD AS ALMACEN_CANTIDAD, PA.CANTIDAD AS PASILLO_CANTIDAD, P.NOMBRE AS PRODUCTO FROM "TIENDA" T, "PASILLO" PA, "PRODUCTO" P, "ALMACEN" A '+
+    'WHERE A.fk_tienda=T.tienda_id AND PA.fk_tienda=T.tienda_id AND PA.cantidad<20 AND PA.fk_producto = P.producto_id AND A.fk_producto = P.producto_id AND T.tienda_id=$1;',
+    [
+      tienda_id
+    ],
+    (error, results) =>{
+      if(error){
+        throw error
+      }
+      response.status(201).json(results.rows)
+    }
+  )
+}
+
+const reponerInventarioPasillo = async(request, response) =>{
+  const{
+    tienda_id,
+    inventario
+  } = request.body
+  let tienda = new Tienda()
+  tienda.id = tienda_id
+  if(await tienda.buscarTiendaConId()){
+    await tienda.reponerInventarioPasillo(inventario)
+    response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
+  }
+  else{
+    response.status(201).json([])
+  }
 }
 
 const postpruebaprueba = async(request, response) => {
@@ -1654,6 +1688,10 @@ const postpruebaprueba = async(request, response) => {
   
 
 }
+
+app
+  .route("/reposicionInventarioPasillo")
+  .post(reposicionInventarioPasillo)
 
 app
   .route("/cajero")

@@ -1,3 +1,4 @@
+const { json } = require("express");
 const { pool } = require("./config");
 const {
     insertUsuarioNatural, updateUsuarioNatural, deleteUsuarioNatural, readUsuario, readUsuarioLogin,
@@ -1262,8 +1263,10 @@ class Operacion{
         }
     }
 
-    async actualizarOperacion(){
-        this.fecha_entrega = validador.obtenerHoraEntrega()
+    async actualizarOperacion(tipo){
+        if(tipo == 1){
+            this.fecha_entrega = validador.obtenerHoraEntrega()
+        }
         await updateOperacion(this)
     }
     async insertarOrden(listaProducto){
@@ -1331,16 +1334,14 @@ class Tienda{
         this.estado = estado
         this.zona = []
     }
-    async reponerInventarioAlmacen(almacen){
 
-    }
-
-    async reponerInventarioPasillo(pasillo){
-        let almacen = await readAlmacenInventario(pasillo.fk_tienda, pasillo.fk_producto)
-        if(parseInt(almacen[0].cantidad) > 50){
-            await updatePasilloInventario(pasillo.fk_producto, pasillo.fk_tienda)
-            await updateAlmacenCantidad(50, pasillo.fk_tienda, pasillo.fk_producto)
+    async reponerInventarioPasillo(producto){
+        let product = JSON.parse(producto)
+        for(let i=0; Object.keys(product).length; i++){
+            await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id)
+            await updatePasilloInventario(product[i].cantidad, product[i].id, this.id)
         }
+
     }
 
     async buscarTiendaConId(){
@@ -1368,20 +1369,14 @@ class Tienda{
     async actualizarCantidadAlmacen(producto){
         let product = JSON.parse(producto)
         for(let i=0; i<Object.keys(product).length; i++){
-            let almacen =await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id) //reponer inventario con el resultado, remember
-            if(almacen[0].cantidad < 100000){
-                await this.reponerInventarioAlmacen(almacen[0])
-            }
+            await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id)
         }
     }
 
     async actualizarCantidadPasillo(producto){
         let product = JSON.parse(producto)
         for(let i=0; i< Object.keys(product).length; i++){
-            let pasillo = await updatePasilloCantidad(product[i].cantidad, product[i].id, this.id) //reponer inventario pasillo con el resultado, remember
-            if(pasillo[0].cantidad < 20){
-                await this.reponerInventarioPasillo(pasillo[0])
-            }
+            await updatePasilloCantidad(product[i].cantidad, product[i].id, this.id)
         }
     }
 

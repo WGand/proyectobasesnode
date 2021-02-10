@@ -1964,14 +1964,21 @@ const readPasillo = async(tienda_id) =>{
     })
 }
 
-const updatePasilloInventario = async(producto_id, tienda_id) =>{
+const updatePasilloInventario = async(cantidad, producto_id, tienda_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'UPDATE "PASILLO" SET cantidad=50 WHERE fk_producto=$1 AND fk_tienda=$2',
+            'UPDATE "PASILLO" SET cantidad=cantidad + $3 WHERE fk_producto=$1 AND fk_tienda=$2',
             [
                 producto_id,
-                tienda_id
-            ]
+                tienda_id,
+                cantidad
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
         )
     })
 }
