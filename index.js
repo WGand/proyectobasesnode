@@ -1689,7 +1689,7 @@ const ordenesDeReposicionDeInventario = async(request, response) =>{
     rif
   } = request.body
   pool.query(
-    'SELECT * FROM "OPERACION" O, "OPERACION_ESTATUS" EO WHERE O.fk_tienda=(SELECT fk_tienda from "EMPLEADO" WHERE rif=$1) AND O.fk_empleado IS NULL'+
+    'SELECT * FROM "OPERACION" O, "OPERACION_ESTATUS" EO WHERE O.fk_tienda=(SELECT fk_tienda from "EMPLEADO" WHERE rif=$1) AND O.fk_empleado IS NULL '+
     'AND O.fk_natural IS NULL AND O.FK_JURIDICO IS NULL AND EO.fk_operacion=O.operacion_id AND EO.fk_estatus=1',
     [
       rif
@@ -1784,13 +1784,40 @@ const AsistenciaHorario = async() =>{
   )
 }
 
+const insertEmpleadoHorario = async(rif, horario_id) =>{
+  return new Promise((resolve, reject) =>{
+      pool.query(
+          'INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
+          [
+              rif,
+              horario_id
+          ],
+          (error, results) =>{
+              if (error){
+                  reject(error)
+              }
+              resolve(results.rowCount)
+          }
+      )
+  })
+}
+
+const todosEmpleadosSinHorario = async(rif, horario_id) =>{
+  return new Promise((resolve, reject) =>{
+      pool.query(
+          'SELECT rif FROM "EMPLEADO" WHERE rif NOT IN (SELECT fk_empleado FROM "EMPLEADO_HORARIO")',
+          (error, results) =>{
+              if (error){
+                  reject(error)
+              }
+              resolve(results.rowCount)
+          }
+      )
+  })
+}
+
 const postpruebaprueba = async(request, response) => {
-  const {
-    producto,
-    descuento,
-  } = request.body
-  let productos = new Producto()
-  await productos.insertarDescuento(producto, descuento)
+  pool.query()
   
 }
 

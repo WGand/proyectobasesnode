@@ -1004,6 +1004,7 @@ class Empleado extends Usuario{
     }
     async eliminarUsuario(){
         if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla))){
+            await deleteEmpleadoCargo(this.rif)
             if(await deleteUsuarioEmpleado(this) == 1){
                 return true
             }
