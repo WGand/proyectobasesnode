@@ -1602,8 +1602,53 @@ const AsistenciaHorario = async() =>{
         .margins(20)                                 // Change the Margins to 20 pixels
         .data(data)									 // Add our Data
         .pageHeader(headerFunction)    		         // Add a header
-        .pageFooter(footerFunction)                  // Add a footer
-        .detail("{{HORA ENTRADA}}    {{HORA SALIDA}}    {{CEDULA}}    {{PRIMER NOMBRE}}    {{APELLIDO}}")    // Put how we want to print out the data line.
+        .pageFooter(footerFunction)              // Add a footer
+        .detail("ENTRADA: {{HORA ENTRADA}}    SALIDA:{{HORA SALIDA}}    CEDULA:{{CEDULA}}    NOMBRE:{{PRIMER NOMBRE}}    {{APELLIDO}}")    // Put how we want to print out the data line.
+        .render();  
+    }
+  )
+}
+
+const envioHorasTrabajadas = async(request, response) =>{
+  var file = fs.createReadStream("./HorasTrabajadas.pdf")
+    file.pipe(response)
+}
+
+const ingresosEgresos = async() =>{
+  pool.query(
+    'SELECT FROM OPE'
+  )
+}
+
+const EmpleadoHoras = async() =>{
+  pool.query(
+    'SELECT E.cedula_identidad "CEDULA", E.primer_apellido "APELLIDO", '+
+    'EXTRACT(hour FROM SUM(A.horario_salida-A.horario_entrada)) "Horas trabajadas", '+
+    'EXTRACT(HOUR FROM AVG(A.horario_entrada)) "Promedio hora salida", '+
+    'EXTRACT(HOUR FROM AVG(A.horario_salida)) "Promedio hora entrada", '+
+    'FROM "EMPLEADO" E, "EMPLEADO_HORARIO" EH, "ASISTENCIA" A, "HORARIO" H WHERE E.RIF=A.fk_empleado '+
+    'AND E.RIF = EH.fk_empleado AND H.horario_id=eh.fk_horario group by  E.cedula_identidad, E.primer_apellido',
+    (error, results) =>{
+      if(error){
+        throw error
+      }
+      data = results.rows
+      var headerFunction = function(Report) {
+        Report.print("REPORTE HORAS TRABAJADAS", {fontSize: 25, bold: true, underline:true, align: "center"});
+        Report.newLine(2);
+    };
+
+    var footerFunction = function(Report) {
+        Report.line(Report.currentX(), Report.maxY()-8, Report.maxX(), Report.maxY()-8);
+        Report.pageNumber({text: "Pagina {0} of {1}", footer: true, align: "right"});
+    };
+
+    var rpt = new Report("HorasTrabajadas.pdf")
+        .margins(20)                                 // Change the Margins to 20 pixels
+        .data(data)									 // Add our Data
+        .pageHeader(headerFunction)    		         // Add a header
+        .pageFooter(footerFunction)       // Add a footer
+        .detail("APELLIDO: {{APELLIDO}}   CEDULA:{{CEDULA}}   HORAS Totales: {{Horas trabajadas}}  PROMEDIO SALIDA: {{Promedio hora salida}}  PROMEDIO ENTRADA:{{Promedio hora entrada}}")    // Put how we want to print out the data line.
         .render();  
     }
   )
@@ -1683,7 +1728,63 @@ async function convertirArchivo(){
   });
 }
 
+const archivo = async(nombre, apellido, cedula, cliente)  => {
+  var html = fs.readFileSync('./index.html', 'utf-8')
+  var options = {
+    format: "A3",
+    orientation: "portrait",
+    border: "10mm",
+    header: {
+      height: "45mm",
+      contents: ''
+    },
+    "footer":{
+      "height":"28mm",
+      "contents":{
+        first: '',
+        2:'Second page',
+        default:'',
+        last: ''
+      }}
+    }
+  var usuario = {
+    nombre: nombre,
+    apellido: apellido,
+    cedula: cedula,
+    cliente: cliente,
+    tienda: '001'
+  }
+  var document = {
+    html: html,
+    data:{
+      user: usuario
+    },
+    path: "./carnet.pdf"}
+    PDFDocument.create(document, options)
+    .then(res => {
+    })
+    .catch(error => {
+    });
+}
 
+const imprimirCarnetUsuario = async(request, response) =>{
+  const {rif} = request.body
+  pool.query('SELECT * FROM "NATURAL" WHERE rif = $1',
+  [rif],
+  (error, results) =>{
+      if (error){
+        throw error
+      }
+      if(results.rowCount == 1){
+        archivo(results.rows[0]['primer_nombre'], results.rows[0]['primer_apellido'], results.rows[0]['cedula_identidad'], results.rows[0]['rif'])
+        response.status(201).json({mensae:"listo"})
+      }
+      else{
+        response.status(201).json({mensaje:"No se encontr[o"})
+      }
+    }
+  )
+}
 
 const postpruebaprueba = async(request, response) => {
   await convertirArchivo()
@@ -1694,6 +1795,21 @@ const postpruebaprueba = async(request, response) => {
     }
   }
 }
+
+const envioCarnet = async(request, response) =>{
+  var file = fs.createReadStream("./carnet.pdf")
+    file.pipe(response)
+}
+
+app
+  .route("/carnetusuario")
+  .post(imprimirCarnetUsuario)
+  .get(envioCarnet)
+
+app
+  .route("/empleadohoras")
+  .post(EmpleadoHoras)
+  .get(envioHorasTrabajadas)
 
 app
   .route("/horarioempleados")
