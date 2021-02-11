@@ -1614,12 +1614,6 @@ const envioHorasTrabajadas = async(request, response) =>{
     file.pipe(response)
 }
 
-const ingresosEgresos = async() =>{
-  pool.query(
-    'SELECT FROM OPE'
-  )
-}
-
 const EmpleadoHoras = async() =>{
   pool.query(
     'SELECT E.cedula_identidad "CEDULA", E.primer_apellido "APELLIDO", '+
@@ -1654,6 +1648,12 @@ const EmpleadoHoras = async() =>{
   )
 }
 
+const ingresoYEgreso = async(request, response) =>{
+  let ingreso = ingreso()
+  let egreso = egreso()
+
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
       cb(null, 'uploads');
@@ -1677,7 +1677,6 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
 });
 
 const horarioEmpleados = async(response) => {
-  convertirArchivo()
   await convertirArchivo()
   await wait(20000)
   data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
@@ -1796,9 +1795,45 @@ const postpruebaprueba = async(request, response) => {
   }
 }
 
+const ingreso = async() =>{
+  return new Promise((resolve, reject) =>{
+    pool.query(
+      'SELECT T.tienda_id, SUM(O.monto_total) FROM "TIENDA" T, "OPERACION" O, "OPERACION_ESTATUS" OE, "ESTATUS" E WHERE O.operacion_id=oe.fk_operacion AND '+
+      'E.estatus_id=oe.fk_estatus AND e.estatus=1 AND O.fk_tienda= t.tienda_id group by T.tienda_id',
+      (error, results)=>{
+        if(error){
+          reject(error)
+        }
+        resolve(results)
+      }
+    )
+  })
+}
+
+const egreso = async() =>{
+  return new Promise((resolve, reject) =>{
+    pool.query(
+      'SELECT "TIENDA".tienda_id, SUM(monto_total) FROM "OPERACION", "TIENDA" WHERE fk_empleado'+
+      'IS NULL AND fk_natural IS NULL AND fk_juridico IS NULL AND "TIENDA".tienda_id="OPERACION".fk_tienda group by "TIENDA".tienda_id',
+      (error, results) =>{
+        if(error){
+          reject(error)
+        }
+        resolve(results)
+      }
+    )
+  })
+}
+
 const envioCarnet = async(request, response) =>{
   var file = fs.createReadStream("./carnet.pdf")
     file.pipe(response)
+}
+
+const crearTodosReportes = async()=>{
+  await AsistenciaHorario()
+  await horarioEmpleados()
+
 }
 
 app
