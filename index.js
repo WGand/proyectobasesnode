@@ -4,6 +4,7 @@ const cors = require("cors");
 const { pool } = require("./config");
 const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
+var formidable = require('formidable');
 const Report = require('fluentreports').Report
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
@@ -11,193 +12,15 @@ const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, J
   PersonaContacto, Contenedor, Horario, Producto, Operacion, Estatus, Usuario, Punto, Tienda} = require('./clases');
 const { response } = require("express");
 const { Console } = require("console");
+const exphbs = require("express-handlebars")
 const e = require("express");
+const path = require("path");
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 let validador = new ValidadorUsuario()
 
-
-
-function convertirArchivo(){
-  xlsxj({
-    input: "./uploads/horario.xlsx", 
-    output: "output.json"
-  }, function(err, result) {
-    if(err) {
-      console.error(err);
-    }else {
-      return result
-    }
-  });
-}
-
-function wait(milleseconds) {
-  return new Promise(resolve => setTimeout(resolve, milleseconds))
-}
-
-const horarioEmpleados = async(request, response) => {
-  convertirArchivo()
-  data = JSON.parse(fs.readFileSync('output.json','utf-8'))
-  for(let i = 2; i < 480; i++){
-    if(data[i]['RIF'] != '' && data[i]['RIF'].length == 9 && data['HORA DE ENTRADA'] != "NaN:NaN"){
-      await wait(300)
-      await pool.query(
-        'SELECT * FROM "EMPLEADO" WHERE rif=$1',
-        [data[i]['RIF']],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount == 1){
-            pool.query(
-              'INSERT INTO "ASISTENCIA" (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
-              [data[i]['FECHA'], data[i]['HORA DE ENTRADA'], data[i]['HORA DE SALIDA'], data[i]['RIF']],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-              }
-            )
-          }
-        }
-      )
-    }
-  }
-  response.status(201).json({mensaje:"listo"})
-}
-
-app.use(bodyParser.json());
-var storage = multer.diskStorage({ //multers disk storage settings
-    destination: function (req, file, cb) {
-        cb(null, './uploads/')
-    },
-    filename: function (req, file, cb) {
-        var datetimestamp = Date.now();
-        cb(null,file.originalname)
-    }
-  });
-var upload = multer({ //multer settings
-                storage: storage
-            }).single('file');
-
-const subir = async(req, res) =>{
-  upload(req,res,function(err){
-    if(err){
-      res.json({error_code:1,err_desc:err});
-      return;
- }
-  res.json({error_code:0,err_desc:null});
-  })
-}
-
-const archivo = async(nombre, apellido, cedula, cliente)  => {
-  var html = fs.readFileSync('./index.html', 'utf-8')
-  var options = {
-    format: "A3",
-    orientation: "portrait",
-    border: "10mm",
-    header: {
-      height: "45mm",
-      contents: ''
-    },
-    "footer":{
-      "height":"28mm",
-      "contents":{
-        first: '',
-        2:'Second page',
-        default:'',
-        last: ''
-      }}
-    }
-  var usuario = {
-    nombre: nombre,
-    apellido: apellido,
-    cedula: cedula,
-    cliente: cliente,
-    tienda: '001'
-  }
-  var document = {
-    html: html,
-    data:{
-      user: usuario
-    },
-    path: "./output.pdf"}
-    PDFDocument.create(document, options)
-    .then(res => {
-    })
-    .catch(error => {
-    });
-}
-
-const reporteHorario = async(request, response) =>{
-  pool.query('SELECT "EMPLEADO".*, "EMPLEADO_HORARIO".*, "HORARIO".*, "ASISTENCIA".* FROM (("EMPLEADO_HORARIO" INNER JOIN "HORARIO" ON "EMPLEADO_HORARIO".fk_horario = "HORARIO".horario_id) INNER JOIN "EMPLEADO" ON "EMPLEADO".rif = "EMPLEADO_HORARIO".fk_empleado) INNER JOIN "ASISTENCIA" ON "ASISTENCIA".fk_empleado = "EMPLEADO".rif',
-  (error, results) =>{
-      if (error){
-        throw error
-      }
-      for(i = 0; i < results.rowCount; i++){
-        if(results.rows[i]['horario_entrada'] == results.rows[i]['hora_inicio'] && results.rows[i]['horario_salida'] == results.rows[i]['hora_fin']){
-          results.rows[i]['cumplio'] = 'SI'
-        }
-        else{
-          results.rows[i]['cumplio'] = 'NO'
-        }
-      }
-      let obj = results.rows
-      var k = '<table>'
-      k+= '<tr>';
-      k+= '<td>' + 'C.I' + '</td>';
-      k+= '<td>' + 'PRIMER NOMBRE'+ '</td>';
-      k+= '<td>' + 'SEGUNDO NOMBRE'+ '</td>';
-      k+= '<td>' + 'PRIMER APELLIDO'+ '</td>';
-      k+= '<td>' + 'SEGUNDO APELLIDO'+ '</td>';
-      k+= '<td>' + 'FECHA'+ '</td>';
-      k+= '<td>' + 'HORARIO ENTRADA' + '</td>';
-      k+= '<td>' + 'HORARIO SALIDA'+ '</td>';
-      k+= '<td>' + 'CUMPLIMIENTO'+ '</td>';
-      k+= '</tr>';
-      for(i = 0;i < obj.length; i++){
-          k+= '<tr>';
-          k+= '<td>' + obj[i]['cedula_identidad'] + '</td>';
-          k+= '<td>' + obj[i]['primer_nombre'] + '</td>';
-          k+= '<td>' + obj[i]['segundo_nombre'] + '</td>';
-          k+= '<td>' + obj[i]['primer_apellido'] + '</td>';
-          k+= '<td>' + obj[i]['segundo_apellido'] + '</td>';
-          k+= '<td>' + obj[i]['fecha'] + '</td>';
-          k+= '<td>' + obj[i]['horario_entrada'] + '</td>';
-          k+= '<td>' + obj[i]['horario_salida'] + '</td>';
-          k+= '<td>' + obj[i]['cumplio'] + '</td>';
-          k+= '</tr>';
-      }
-      k+='</table>';
-      fs.writeFile('./reporteH.html', k, function (err) {
-        if (err) throw err;               console.log('Results Received');
-      }); 
-        response.status(201).json({message:"listo"})
-    }
-  )
-}
-
-const imprimirCarnetUsuario = async(request, response) =>{
-  const {rif} = request.body
-  pool.query('SELECT * FROM "NATURAL" WHERE rif = $1',
-  [rif],
-  (error, results) =>{
-      if (error){
-        throw error
-      }
-      if(results.rowCount == 1){
-        archivo(results.rows[0]['primer_nombre'], results.rows[0]['primer_apellido'], results.rows[0]['cedula_identidad'], results.rows[0]['rif'])
-        response.status(201).json({mensae:"listo"})
-      }
-      else{
-        response.status(201).json({mensaje:"No se encontr[o"})
-      }
-    }
-  )
-}
 
 const postLugarParroquia = async (request, response) => {
   const {parroquia} = request.body
@@ -395,7 +218,7 @@ const postUsuario = async (request, response) => {
                         throw error;
                       }
                       pool.query(
-                        'SELECT * FROM "HORARIO" WHERE horario_id = $1',
+                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado',
                         [results.rows[0]['fk_horario']],
                         (error, results) => {
                           if (error) {
@@ -1821,11 +1644,7 @@ const todosEmpleadosSinHorario = async(rif, horario_id) =>{
 }
 
 const postpruebaprueba = async(request, response) => {
-  let empleados = await todosEmpleadosSinHorario()
-  for(let i=0; i<empleados.length; i++){
-    await insertEmpleadoHorario(empleados[i].rif, 1)
-  }
-  
+
 }
 
 app
@@ -1924,18 +1743,18 @@ app
   .put(updateEmpleado)
   .delete(deleteEmpleado)
 
-app 
-  .route("/carnet")
-  .post(imprimirCarnetUsuario)
-
-app 
-  .route("/reportehorario")
-  .get(reporteHorario)
-
-app 
-  .route("/Documento")
-  .post(subir)
-  .get(horarioEmpleados)
+//app 
+//  .route("/carnet")
+//  .post(imprimirCarnetUsuario)
+//
+//app 
+//  .route("/reportehorario")
+//  .get(reporteHorario)
+//
+//app 
+//  .route("/Documento")
+//  .post(subir)
+//  .get(horarioEmpleados)
 
 app 
   .route("/inventario")
