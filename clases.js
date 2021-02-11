@@ -1391,7 +1391,7 @@ class Tienda{
     }
 
     async buscarTiendaConId(){
-        if(await readTiendaId(this.id) == 1){
+        if((await readTiendaId(this.id)).length > 0){
             return true
         }
         else{

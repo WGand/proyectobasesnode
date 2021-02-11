@@ -1734,7 +1734,8 @@ const postpruebaprueba = async(request, response) => {
     tienda_id,
   } = request.body
   let tienda = new Tienda()
-  await tienda.reponerInventarioAlmacen()
+  tienda.id = 10
+  //await tienda.reponerInventarioAlmacen()
   
 
   
