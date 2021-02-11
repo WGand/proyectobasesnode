@@ -1681,12 +1681,20 @@ const reposicionInventarioPasillo = async(request, response) => {
 
 const ordenesDeReposicionDeInventario = async(request, response) =>{
   const{
-
+    rif
   } = request.body
   pool.query(
-    ''
+    'SELECT * FROM "OPERACION" WHERE fk_tienda=(SELECT fk_tienda from "EMPLEADO" WHERE rif=$1) AND fk_empleado IS NULL AND fk_natural IS NULL and FK_JURIDICO IS NULL',
+    [
+      rif
+    ],
+    (error, results) =>{
+      if(error){
+        throw error
+      }
+      response.status(201).json(results.rows)
+    }
   )
-
 }
 
 const reponerInventarioPasillo = async(request, response) =>{
@@ -1705,13 +1713,26 @@ const reponerInventarioPasillo = async(request, response) =>{
   }
 }
 
+const reponerInventarioAlmacen = async(request, response) =>{
+  const{
+    operacion_id
+  } = request.body
+  let tienda = new Tienda()
+  if(await tienda.reponerInventarioAlmacen(operacion_id)){
+    response.status(201).json({status:"Funciono", message: "Registro exitoso"})
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
 const postpruebaprueba = async(request, response) => {
   const {
     producto,
     tienda_id,
   } = request.body
   let tienda = new Tienda()
-  await tienda.checkInventarioAlmacen()
+  await tienda.reponerInventarioAlmacen()
   
 
   
@@ -1734,6 +1755,15 @@ const postpruebaprueba = async(request, response) => {
   
 
 }
+
+
+app
+  .route("/reponerinventarioalmacen")
+  .post(reponerInventarioAlmacen)
+
+app
+  .route("/ordenesreposicioninventario")
+  .post(ordenesDeReposicionDeInventario)
 
 app
   .route("/inventariotiendatabla")

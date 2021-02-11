@@ -1931,6 +1931,24 @@ const insertAlmacen = async(cantidad, tienda_id, producto_id) =>{
     })
 }
 
+const updateAlmacenInventario = async(operacion_id, fk_producto) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "ALMACEN" SET cantidad= cantidad+10000 WHERE fk_tienda=(SELECT fk_tienda FROM "OPERACION" WHERE operacion_id=$1) AND fk_producto=$2',
+            [
+                operacion_id,
+                fk_producto
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 const updateAlmacenCantidad = async(cantidad, fk_tienda, fk_producto) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -2310,6 +2328,7 @@ module.exports = {
     readAlmacenInventario:readAlmacenInventario,
     readAlmacen: readAlmacen,
     insertAlmacen: insertAlmacen,
+    updateAlmacenInventario, updateAlmacenInventario,
     updateAlmacenCantidad: updateAlmacenCantidad,
     deleteAlmacen: deleteAlmacen,
     deleteAlmacenProducto: deleteAlmacenProducto,

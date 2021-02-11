@@ -24,7 +24,7 @@ const {
     readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa, insertOperacionInventario,
     deleteProductoEnListaProducto, updateOperacionTienda,
     readTienda, updateTienda, insertTienda, deleteTienda, readTiendaTodas, readTiendaId,
-    readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario,
+    readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario, updateAlmacenInventario,
     readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
     deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona, readAlmacenReponer,
     readZona, readProductos, insertZonaPasillo, updatePasilloInventario, updateOperacionSinFecha
@@ -1355,6 +1355,23 @@ class Tienda{
         operacion.fecha_orden = validador.obtenerHora()
         await operacion.insertarOperacionEstatus(estado)
         await insertListaProducto(operacion.id, 10000, operacion.tipo, reponer.fk_producto)
+    }
+
+    async reponerInventarioAlmacen(operacion_id){
+        let operacion = new Operacion()
+        let estado = new Estatus('', 'Recibido')
+        await estado.buscarEstado()
+        operacion.id = operacion_id
+        await operacion.buscarOperacionId()
+        let producto = (await readListaProducto(operacion.id, operacion.tipo))[0].fk_producto
+        await updateAlmacenInventario(operacion.id, producto)
+        await operacion.actualizarOperacion(1)
+        if(await operacion.actualizarOperacionEstatus(estado)){
+            return true
+        }
+        else{
+            return false
+        }
     }
 
     async checkInventarioAlmacen(){
