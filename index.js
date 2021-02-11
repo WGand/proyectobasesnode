@@ -1634,6 +1634,7 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
 const horarioEmpleados = async(response) => {
   convertirArchivo()
   await convertirArchivo()
+  await wait(20000)
   data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
   for(let i=2; i< data.length; i++){
     if(data[i].CEDULA != ''){
@@ -1642,6 +1643,10 @@ const horarioEmpleados = async(response) => {
     }
   }
   response.status(201).json({status: "Funciono", message: "Registro exitoso"})
+}
+
+function wait(milleseconds) {
+  return new Promise(resolve => setTimeout(resolve, milleseconds))
 }
 
 const llenarAsistencia = async(empleado)=>{
