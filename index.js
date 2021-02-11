@@ -1345,6 +1345,7 @@ const postOrden = async(request, response) => {
     await estadoPendiente.buscarEstado()
     await operacion.insertarOperacionEstatus(estadoPendiente)
     await operacion.insertarOrden(contenedor.contenedor)
+    await operacion.insertarTienda(tienda_id)
     if(tipo_compra == 'presencial'){
       await tienda.actualizarCantidadPasillo(producto)
     }
@@ -1659,6 +1660,16 @@ const reposicionInventarioPasillo = async(request, response) => {
   )
 }
 
+const ordenesDeReposicionDeInventario = async(request, response) =>{
+  const{
+
+  } = request.body
+  pool.query(
+    ''
+  )
+
+}
+
 const reponerInventarioPasillo = async(request, response) =>{
   const{
     tienda_id,
@@ -1681,8 +1692,7 @@ const postpruebaprueba = async(request, response) => {
     tienda_id,
   } = request.body
   let tienda = new Tienda()
-  tienda.id = tienda_id
-      await tienda.actualizarCantidadPasillo(producto)
+  await tienda.checkInventarioAlmacen()
   
 
   

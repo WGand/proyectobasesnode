@@ -21,12 +21,12 @@ const {
     readEmpleadoCargo, insertEmpleadoCargo, deleteEmpleadoCargo, updateEmpleadoCargo,
     insertProveedor, deleteProveedor,
     readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, 
-    readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa,
-    deleteProductoEnListaProducto,
+    readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa, insertOperacionInventario,
+    deleteProductoEnListaProducto, updateOperacionTienda,
     readTienda, updateTienda, insertTienda, deleteTienda, readTiendaTodas, readTiendaId,
     readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario,
     readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
-    deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona,
+    deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona, readAlmacenReponer,
     readZona, readProductos, insertZonaPasillo, updatePasilloInventario, updateOperacionSinFecha
     } = require('./queries')
 
@@ -1231,6 +1231,10 @@ class Operacion{
         this.tipo = 'operacion'
     }
 
+    async insertarTienda(tienda_id){
+        await updateOperacionTienda(this.id, tienda_id)
+    }
+
     async buscarOperacionId(){
         let operacion = (await readOperacionId(this.id))[0]
         this.condiciones = operacion.condiciones
@@ -1337,6 +1341,27 @@ class Tienda{
         this.municipio = municipio
         this.estado = estado
         this.zona = []
+    }
+
+    async crearOperacionDeReposicion(reponer){
+        let producto = new Producto()
+        let estado = new Estatus('', 'Pendiente')
+        await estado.buscarEstado()
+        producto.id = reponer.fk_producto
+        await producto.buscarProductoId()
+        let operacion = new Operacion('reposicion de inventario', validador.obtenerHora(), parseInt(producto.precio) * 10000)
+        let operacion_id = (await insertOperacionInventario(operacion, reponer.fk_tienda))[0].operacion_id
+        operacion.id = operacion_id
+        operacion.fecha_orden = validador.obtenerHora()
+        await operacion.insertarOperacionEstatus(estado)
+        await insertListaProducto(operacion.id, 10000, operacion.tipo, reponer.fk_producto)
+    }
+
+    async checkInventarioAlmacen(){
+        let reponer = await readAlmacenReponer()
+        for(let i=0; i< reponer.length; i++){
+            await this.crearOperacionDeReposicion(reponer[i])
+        }
     }
 
     async reponerInventarioPasillo(producto){

@@ -1233,6 +1233,26 @@ const insertOperacion = async(operacion, tipo, rif) =>{
     })
 }
 
+const insertOperacionInventario = async(operacion, tienda_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "OPERACION" (condiciones, fecha_orden, monto_total, fk_tienda) VALUES ($1, $2, $3, $4) RETURNING operacion_id',
+            [
+                operacion.condiciones,
+                operacion.fecha_orden,
+                operacion.monto_total,
+                tienda_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
 const updateOperacionSinFecha = async(operacion) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -1261,6 +1281,24 @@ const updateOperacion = async(operacion) =>{
             [
                 operacion.id,
                 operacion.fecha_entrega
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
+const updateOperacionTienda = async(operacion_id, tienda_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "OPERACION" SET fk_tienda=$1 WHERE operacion_id=$2',
+            [
+                tienda_id,
+                operacion_id
             ],
             (error, results) =>{
                 if(error){
@@ -1361,6 +1399,7 @@ const readOperacionEstatusEID = async(estatus_id) =>{
 }
 
 const insertOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
+    console.log(operacion_id + estatus_id + fecha)
     return new Promise((resolve, reject) =>{
         pool.query(
             'INSERT INTO "OPERACION_ESTATUS" (fk_operacion, fk_estatus, fecha) VALUES ($1, $2, $3)',
@@ -1370,6 +1409,7 @@ const insertOperacionEstatus = async(operacion_id, estatus_id, fecha) =>{
                 fecha
             ],
             (error, results) =>{
+                console.log(error)
                 if(error){
                     reject(error)
                 }
@@ -1858,6 +1898,20 @@ const readAlmacen = async(tienda_id) =>{
     })
 }
 
+const readAlmacenReponer = async() =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "ALMACEN" WHERE cantidad<=100',
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
 const insertAlmacen = async(cantidad, tienda_id, producto_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -2181,6 +2235,8 @@ module.exports = {
     deleteJuridicoProductoPID: deleteJuridicoProductoPID,
     deleteJuridicoProductoRIF: deleteJuridicoProductoRIF,
     //Operacion
+    insertOperacionInventario: insertOperacionInventario,
+    updateOperacionTienda: updateOperacionTienda,
     updateOperacionSinFecha: updateOperacionSinFecha,
     readOperacion: readOperacion,
     readOperacionId: readOperacionId,
@@ -2250,6 +2306,7 @@ module.exports = {
     insertTienda: insertTienda,
     deleteTienda: deleteTienda,
     //Almacen
+    readAlmacenReponer: readAlmacenReponer,
     readAlmacenInventario:readAlmacenInventario,
     readAlmacen: readAlmacen,
     insertAlmacen: insertAlmacen,
