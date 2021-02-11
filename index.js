@@ -4,6 +4,7 @@ const cors = require("cors");
 const { pool } = require("./config");
 const PDFDocument = require('pdf-creator-node');
 const fs = require("fs");
+const Report = require('fluentreports').Report
 xlsxj = require("xlsx-to-json")
 const multer = require("multer");
 const {Validador, Empleado, Natural, ValidadorUsuario, Lugar, Telefono, Login, Juridico,
@@ -16,6 +17,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 let validador = new ValidadorUsuario()
+
+
 
 function convertirArchivo(){
   xlsxj({
@@ -1733,30 +1736,22 @@ const postpruebaprueba = async(request, response) => {
     producto,
     tienda_id,
   } = request.body
-  let tienda = new Tienda()
-  tienda.id = 10
-  //await tienda.reponerInventarioAlmacen()
-  
-
-  
-  //let contenedor = new Contenedor()
-  //let usuarioGenerico = new Usuario()
-  //let usuario = await usuarioGenerico.crearUsuario(tipo)
-  //if(await contenedor.ordenarProducto(producto) && await validador.existeRif(rif, usuario.tipo_usuario_tabla)){
-  //  let operacion = new Operacion('', fecha, monto_total, '')
-  //  let estadoPendiente = new Estatus('', 'Pendiente')
-  //  await operacion.insertarOperacion(usuario.tipo_usuario, rif)
-  //  await estadoPendiente.buscarEstado()
-  //  await operacion.insertarOperacionEstatus(estadoPendiente)
-  //  await operacion.insertarOrden(contenedor.contenedor)
-  //  response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
-  //}
-  //else{
-  //  response.status(201).json([])
-  //}
-
-  
-
+  pool.query(
+    'SELECT A.HORARIO_ENTRADA "HORA ENTRADA", A.HORARIO_SALIDA "HORA SALIDA", E.CEDULA_IDENTIDAD "CEDULA", E.PRIMER_NOMBRE "PRIMER NOMBRE", '+
+    'E.PRIMER_APELLIDO "APELLIDO" FROM "ASISTENCIA" A, "EMPLEADO" E WHERE A.fk_empleado=E.rif',
+    (error, results) =>{
+      if(error){
+        throw error
+      }
+      data = results.rows
+      const rpt = new Report("Asistencia.pdf")
+      .data(data)
+      .pageHeader(["REPORTE DE ASISTENCIA DE EMPLEADOS"])
+      .detail("{{HORA ENTRADA}} {{HORA SALIDA}} {{CEDULA}} {{PRIMER NOMBRE}} {{APELLIDO}}")
+      Report.aligment(CENTER)
+      .render()
+    }
+  )
 }
 
 

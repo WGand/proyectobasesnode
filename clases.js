@@ -1384,6 +1384,7 @@ class Tienda{
 
     async reponerInventarioPasillo(producto){
         let product = JSON.parse(producto)
+        console.log(product)
         for(let i=0; Object.keys(product).length; i++){
             await updateAlmacenCantidad(product[i].cantidad, this.id, product[i].id)
             await updatePasilloInventario(product[i].cantidad, product[i].id, this.id)
