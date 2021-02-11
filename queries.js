@@ -185,6 +185,7 @@ const deleteUsuarioJuridico = async(usuario) =>{
                 usuario.rif
             ],
             (error, results) => {
+                console.log(error)
               if (error) {
                 reject(error)
               }
@@ -1058,6 +1059,24 @@ const updateProducto = async(producto) =>{
     })
 }
 
+const updateProductoPrecio = async(producto_id, descuento) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'UPDATE "PRODUCTO" SET precio= precio - (precio*$1)/100 WHERE producto_id=$2',
+            [
+                descuento,
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 const deleteProducto = async(producto) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -1442,17 +1461,18 @@ const deleteProductoEnListaProducto = async(producto_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
             'DELETE FROM "LISTA_PRODUCTO" WHERE fk_producto=$1 AND fk_operacion IN (SELECT O.operacion_id FROM "OPERACION" O,'+
-            ' "OPERACION_ESTATUS" OE, "ESTATUS" E WHERE O.operacion_id=OE.fk_operacion AND E.tipo=Pendiente)'
-        ),
-        [
-            producto_id
-        ],
-        (error, results) =>{
-            if(error){
-                reject(error)
+            ' "OPERACION_ESTATUS" OE, "ESTATUS" E WHERE O.operacion_id=OE.fk_operacion AND OE.fk_estatus=1)',
+            [
+                producto_id
+            ],
+            (error, results) =>{
+                console.log(error)
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
             }
-            resolve(results.rowCount)
-        }
+        )
     })
 }
 
@@ -1765,7 +1785,7 @@ const insertTienda = async(nombre, parroquia, municipio, estado) => {
 const readTiendaTodas = async() =>{
     return new Promise((resolve, reject) =>{
         pool.query(
-            'SELECT * FROM TIENDA',
+            'SELECT * FROM "TIENDA"',
             (error, results) =>{
                 if(error){
                     reject(error)
@@ -2110,6 +2130,23 @@ const deletePasillo = async(tienda_id) =>{
     })
 }
 
+const deletePasilloProducto = async(producto_id) =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'DELETE FROM "PASILLO" WHERE fk_producto=$1',
+            [
+                producto_id
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rowCount)
+            }
+        )
+    })
+}
+
 const insertZonaPasillo = async(tienda_id, zona_id) =>{
     return new Promise((resolve, reject) =>{
         pool.query(
@@ -2197,6 +2234,36 @@ const deleteAlmacenZona = async(almacen_id) =>{
     })
 }
 
+const readDescuento = async() =>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'SELECT * FROM "DESCUENTO"',
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
+
+const insertDescuento = async(descuento_lineal)=>{
+    return new Promise((resolve, reject) =>{
+        pool.query(
+            'INSERT INTO "DESCUENTO" (descuento_lineal) VALUES ($1) RETURNING descuento_id',
+            [
+                descuento_lineal
+            ],
+            (error, results) =>{
+                if(error){
+                    reject(error)
+                }
+                resolve(results.rows)
+            }
+        )
+    })
+}
 
 module.exports = {
     //CRUD
@@ -2245,6 +2312,7 @@ module.exports = {
     readProductos: readProductos,
     insertProducto: insertProducto,
     updateProducto: updateProducto,
+    updateProductoPrecio: updateProductoPrecio,
     deleteProducto: deleteProducto,
     //JuridicoProducto
     readJuridicoProductoPID: readJuridicoProductoPID,
@@ -2339,6 +2407,7 @@ module.exports = {
     updatePasilloInventario: updatePasilloInventario,
     updatePasilloCantidad: updatePasilloCantidad,
     deletePasillo: deletePasillo,
+    deletePasilloProducto:deletePasilloProducto,
     //ZonaPasillo
     deleteZonaPasillo: deleteZonaPasillo,
     insertZonaPasillo: insertZonaPasillo,
@@ -2347,5 +2416,8 @@ module.exports = {
     deleteAlmacenZona: deleteAlmacenZona,
     readAlmacenZona: readAlmacenZona,
     //Zona
-    readZona: readZona
+    readZona: readZona,
+    //Descuento
+    readDescuento: readDescuento,
+    insertDescuento: insertDescuento
 }

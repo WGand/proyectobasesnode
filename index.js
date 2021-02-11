@@ -663,7 +663,7 @@ const postJuridico = async (request, response) => {
     persona_contacto_celular,
     persona_contacto_prefijo_celular
   } = request.body
-  if(Object.keys(request.body).length == 21){
+  if(Object.keys(request.body).length > 0){
     if(validador.Juridico(request.body) && validador.telefonos(request.body) && await validador.existeLugar(request.body) && 
     validador.PersonaContacto(request.body)){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
@@ -767,7 +767,7 @@ const deleteJuridico = async (request, response) => {
     await usuario.persona_contacto.personaExiste(rif)
     await usuario.persona_contacto.idPersona(rif)
     if(await usuario.telefono.eliminarTelefono(usuario.rif, usuario.tipo_usuario) && 
-    await usuario.persona_contacto.telefono.eliminarTelefono(usuario.persona_contacto.id ,usuario.persona_contacto.tipo_usuario)){
+    await usuario.persona_contacto.telefono.eliminarTelefono(usuario.persona_contacto.id , usuario.persona_contacto.tipo_usuario)){
       if(await usuario.persona_contacto.eliminarPersonaContacto(rif)){
         if(await usuario.eliminarUsuario()){
           response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
@@ -1010,7 +1010,7 @@ const deleteProducto = async(request, response) =>{
     producto_id
   } = request.body;
   let producto = new Producto(producto_id)
-  if(producto.eliminarProducto()){
+  if(await producto.eliminarProducto()){
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
@@ -1689,7 +1689,8 @@ const ordenesDeReposicionDeInventario = async(request, response) =>{
     rif
   } = request.body
   pool.query(
-    'SELECT * FROM "OPERACION" WHERE fk_tienda=(SELECT fk_tienda from "EMPLEADO" WHERE rif=$1) AND fk_empleado IS NULL AND fk_natural IS NULL and FK_JURIDICO IS NULL',
+    'SELECT * FROM "OPERACION" O, "OPERACION_ESTATUS" EO WHERE O.fk_tienda=(SELECT fk_tienda from "EMPLEADO" WHERE rif=$1) AND O.fk_empleado IS NULL'+
+    'AND O.fk_natural IS NULL AND O.FK_JURIDICO IS NULL AND EO.fk_operacion=O.operacion_id AND EO.fk_estatus=1',
     [
       rif
     ],
@@ -1725,6 +1726,21 @@ const reponerInventarioAlmacen = async(request, response) =>{
   let tienda = new Tienda()
   if(await tienda.reponerInventarioAlmacen(operacion_id)){
     response.status(201).json({status:"Funciono", message: "Registro exitoso"})
+  }
+  else{
+    response.status(201).json([])
+  }
+}
+
+const hacerDescuento = async(request, response) =>{
+  const{
+    producto, //diccionario tipo {"0":{"id":"61"}}
+    descuento // un numero del 1 al 100
+  } = request.body
+  if(descuento >0 && descuento <=100){
+    let productos = new Producto()
+    await productos.insertarDescuento(producto, descuento)
+    response.status(201).json({status: "Funciono", message: "Registro exitoso"})
   }
   else{
     response.status(201).json([])
@@ -1771,9 +1787,16 @@ const AsistenciaHorario = async() =>{
 const postpruebaprueba = async(request, response) => {
   const {
     producto,
-    tienda_id,
+    descuento,
   } = request.body
+  let productos = new Producto()
+  await productos.insertarDescuento(producto, descuento)
+  
 }
+
+app
+  .route("/descuento")
+  .post(hacerDescuento)
 
 app
   .route("/generarreporte")

@@ -19,7 +19,7 @@ const {
     insertPunto, updatePunto, deletePunto, readPunto,
     readPuntoHistorico, insertPuntoHistorico, readMonedaHistorico, insertMonedaHistorico,
     readEmpleadoCargo, insertEmpleadoCargo, deleteEmpleadoCargo, updateEmpleadoCargo,
-    insertProveedor, deleteProveedor,
+    insertProveedor, deleteProveedor, deletePasilloProducto,
     readLugar, readEstatus, insertOperacion, readOperacion, deleteOperacion, updateOperacion, 
     readHistoricoDivisa, readHistoricoPunto, readOperacionId, insertHistoricoDivisa, insertOperacionInventario,
     deleteProductoEnListaProducto, updateOperacionTienda,
@@ -27,7 +27,8 @@ const {
     readAlmacen, insertAlmacen, updateAlmacenCantidad, deleteAlmacen, deleteAlmacenProducto, readAlmacenInventario, updateAlmacenInventario,
     readPasillo, insertPasillo, updatePasilloCantidad, deletePasillo, readPasilloInventario,
     deleteZonaPasillo, insertAlmacenZona, deleteAlmacenZona, readAlmacenZona, readAlmacenReponer,
-    readZona, readProductos, insertZonaPasillo, updatePasilloInventario, updateOperacionSinFecha
+    readZona, readProductos, insertZonaPasillo, updatePasilloInventario, updateOperacionSinFecha,
+    insertDescuento, readDescuento, updateProductoPrecio
     } = require('./queries')
 
 class Validador{
@@ -585,7 +586,7 @@ class Telefono{
         }
     }
     async eliminarTelefono(usuarioID, tipo){
-        if(await deleteTelefono(usuarioID, tipo) == 2){
+        if(await deleteTelefono(usuarioID, tipo) > 0){
             return true
         }
         else{
@@ -726,6 +727,7 @@ class Juridico extends Usuario{
     }
     async usuarioExiste(){
         let usuario = await super.usuarioExiste()
+        console.log(usuario)
         if(Object.keys(usuario).length > 0){
             this.denominacion_comercial = usuario.denominacion_comercial
             this.correo_electronico = usuario.correo_electronico
@@ -788,6 +790,7 @@ class Juridico extends Usuario{
     }
     async eliminarUsuario(){
         if (this != undefined && (await validador.existeRif(this.rif, this.tipo_usuario_tabla))){
+            await deleteJuridicoProductoRIF(this.rif)
             if(await deleteUsuarioJuridico(this) == 1){
                 return true
             }
@@ -837,7 +840,7 @@ class PersonaContacto{
     
     async personaExiste(rif_juridico){
         let usuario = (await readPersonaContacto(rif_juridico))[0]
-        if(Object.keys(usuario).length == 5){
+        if(Object.keys(usuario).length > 0){
             this.nombre = usuario.nombre
             this.primer_apellido = usuario.primer_apellido
             this.segundo_apellido = usuario.segundo_apellido
@@ -1546,6 +1549,11 @@ class Producto{
         if(await insertProducto(this) == 1){
             await this.buscarProductoSinId()
             if(await insertJuridicoProducto(rif, this.id)){
+                let tiendas = await readTiendaTodas()
+                let tienda = new Tienda()
+                for(let i=0; i< tiendas.length; i++){
+                    await tienda.insertarInventario(tiendas[i].tienda_id, this.id, this.categoria)
+                }
                 return true
             }
             else{
@@ -1569,6 +1577,8 @@ class Producto{
         if(this.id != undefined && this.id != null && this.id != ''){
             if(await deleteJuridicoProductoPID(this.id) == 1){
                 if(await deleteProductoEnListaProducto(this.id) >= 0){
+                    await deleteAlmacenProducto(this.id)
+                    await deletePasilloProducto(this.id)
                     return true
                 }
                 else{
@@ -1602,6 +1612,14 @@ class Producto{
         }
         else{
             return false
+        }
+    }
+    async insertarDescuento(producto, descuento){
+        let productos = JSON.parse(producto)
+        let descuento_id = (await insertDescuento(descuento))[0].descuento_id
+        for(let i=0; i< Object.keys(productos).length; i++){
+            await insertListaProducto(descuento_id, 0, 'descuento', productos[i].id)
+            await updateProductoPrecio(productos[i].id, descuento)
         }
     }
 }
