@@ -1732,17 +1732,13 @@ const reponerInventarioAlmacen = async(request, response) =>{
 }
 
 const envioAsistencia = async(request, response) =>{
-  if(await AsistenciaHorario()){
+
     var file = fs.createReadStream("./Asistencia.pdf")
     file.pipe(response)
-  }
-  else{
-    response.status(201).json([])
-  }
 
 }
 
-async function AsistenciaHorario(){
+const AsistenciaHorario = async() =>{
   pool.query(
     'SELECT A.HORARIO_ENTRADA "HORA ENTRADA", A.HORARIO_SALIDA "HORA SALIDA", E.CEDULA_IDENTIDAD "CEDULA", E.PRIMER_NOMBRE "PRIMER NOMBRE", '+
     'E.PRIMER_APELLIDO "APELLIDO" FROM "ASISTENCIA" A, "EMPLEADO" E WHERE A.fk_empleado=E.rif',
@@ -1770,7 +1766,6 @@ async function AsistenciaHorario(){
         .render();  
     }
   )
-  return true
 }
 
 const postpruebaprueba = async(request, response) => {
@@ -1779,6 +1774,10 @@ const postpruebaprueba = async(request, response) => {
     tienda_id,
   } = request.body
 }
+
+app
+  .route("/generarreporte")
+  .get(AsistenciaHorario)
 
 app
   .route("/envio")
