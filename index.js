@@ -1731,11 +1731,18 @@ const reponerInventarioAlmacen = async(request, response) =>{
   }
 }
 
-const postpruebaprueba = async(request, response) => {
-  const {
-    producto,
-    tienda_id,
-  } = request.body
+const envioAsistencia = async(request, response) =>{
+  if(await AsistenciaHorario()){
+    var file = fs.createReadStream("./Asistencia.pdf")
+    file.pipe(response)
+  }
+  else{
+    response.status(201).json([])
+  }
+
+}
+
+async function AsistenciaHorario(){
   pool.query(
     'SELECT A.HORARIO_ENTRADA "HORA ENTRADA", A.HORARIO_SALIDA "HORA SALIDA", E.CEDULA_IDENTIDAD "CEDULA", E.PRIMER_NOMBRE "PRIMER NOMBRE", '+
     'E.PRIMER_APELLIDO "APELLIDO" FROM "ASISTENCIA" A, "EMPLEADO" E WHERE A.fk_empleado=E.rif',
@@ -1745,14 +1752,13 @@ const postpruebaprueba = async(request, response) => {
       }
       data = results.rows
       var headerFunction = function(Report) {
-        Report.print("REPORTE DE ASISTENCIA", {fontSize: 22, bold: true, underline:true, align: "center"});
+        Report.print("REPORTE DE ASISTENCIA", {fontSize: 25, bold: true, underline:true, align: "center"});
         Report.newLine(2);
     };
 
     var footerFunction = function(Report) {
-        Report.line(Report.currentX(), Report.maxY()-18, Report.maxX(), Report.maxY()-18);
-        Report.pageNumber({text: "Page {0} of {1}", footer: true, align: "right"});
-        Report.print("Printed: "+(new Date().toLocaleDateString()), {y: Report.maxY()-14, align: "left"});
+        Report.line(Report.currentX(), Report.maxY()-8, Report.maxX(), Report.maxY()-8);
+        Report.pageNumber({text: "Pagina {0} of {1}", footer: true, align: "right"});
     };
 
     var rpt = new Report("Asistencia.pdf")
@@ -1760,12 +1766,23 @@ const postpruebaprueba = async(request, response) => {
         .data(data)									 // Add our Data
         .pageHeader(headerFunction)    		         // Add a header
         .pageFooter(footerFunction)                  // Add a footer
-        .detail("{{HORA ENTRADA}} {{HORA SALIDA}} {{CEDULA}} {{PRIMER NOMBRE}} {{APELLIDO}}")    // Put how we want to print out the data line.
+        .detail("{{HORA ENTRADA}}    {{HORA SALIDA}}    {{CEDULA}}    {{PRIMER NOMBRE}}    {{APELLIDO}}")    // Put how we want to print out the data line.
         .render();  
     }
   )
+  return true
 }
 
+const postpruebaprueba = async(request, response) => {
+  const {
+    producto,
+    tienda_id,
+  } = request.body
+}
+
+app
+  .route("/envio")
+  .get(envioAsistencia)
 
 app
   .route("/reponerinventarioalmacen")
