@@ -810,6 +810,8 @@ const postEmpleado = async (request, response) => {
   if(Object.keys(request.body).length > 0){
     let tienda = new Tienda()
     tienda.id = tienda_id
+    console.log((await tienda.buscarTiendaConId()) + 'tienda')
+    console.log(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 && (await tienda.buscarTiendaConId()))
     if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 && (await tienda.buscarTiendaConId())){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
       let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
