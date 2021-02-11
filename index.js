@@ -218,8 +218,8 @@ const postUsuario = async (request, response) => {
                         throw error;
                       }
                       pool.query(
-                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado',
-                        [results.rows[0]['fk_horario']],
+                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado AND e.empleado=$1',
+                        rif,
                         (error, results) => {
                           if (error) {
                             throw error;
