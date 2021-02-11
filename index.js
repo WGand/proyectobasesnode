@@ -634,8 +634,6 @@ const postEmpleado = async (request, response) => {
   if(Object.keys(request.body).length > 0){
     let tienda = new Tienda()
     tienda.id = tienda_id
-    console.log((await tienda.buscarTiendaConId()) + 'tienda')
-    console.log(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 && (await tienda.buscarTiendaConId()))
     if(validador.Empleado(request.body) && validador.telefonos(request.body) && (await validador.existeLugar(request.body))>0 && (await tienda.buscarTiendaConId())){
       let lugarUsuario = new Lugar(parroquia, municipio, estado)
       let telefonoUsuario = new Telefono(telefono, prefijo_telefono, celular, prefijo_celular)
@@ -1579,6 +1577,13 @@ const envioAsistencia = async(request, response) =>{
 
 }
 
+const envioMejoresClientes = async(request, response) =>{
+
+  var file = fs.createReadStream("./MejoresClientes.pdf")
+  file.pipe(response)
+
+}
+
 const AsistenciaHorario = async() =>{
   pool.query(
     'SELECT A.HORARIO_ENTRADA "HORA ENTRADA", A.HORARIO_SALIDA "HORA SALIDA", E.CEDULA_IDENTIDAD "CEDULA", E.PRIMER_NOMBRE "PRIMER NOMBRE", '+
@@ -1659,7 +1664,6 @@ const storage = multer.diskStorage({
       cb(null, 'uploads');
   },
   filename: (req, file, cb) => {
-      console.log(file);
       cb(null, file.originalname);
   }
 })
@@ -1682,11 +1686,9 @@ const horarioEmpleados = async(response) => {
   data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
   for(let i=2; i< data.length; i++){
     if(data[i].CEDULA != ''){
-      console.log(data[i])
       await llenarAsistencia(data[i])
     }
   }
-  response.status(201).json({status: "Funciono", message: "Registro exitoso"})
 }
 
 function wait(milleseconds) {
@@ -1704,7 +1706,6 @@ const llenarAsistencia = async(empleado)=>{
         empleado.rif
       ],
       (error, results) =>{
-        console.log(error)
         if (error){
           reject(error)
         }
@@ -1798,14 +1799,13 @@ const postpruebaprueba = async(request, response) => {
 const listadoMejoresClientes = async(request, response) =>{
   return new Promise((resolve, reject)=>{ 
     pool.query(
-      'SELECT N.cedula_identidad, N.primer_nombre, N.primer_apellido FROM "NATURAL" N, "OPERACION" O WHERE'+
+      'SELECT N.cedula_identidad "CEDULA", N.primer_nombre "NOMBRE", N.primer_apellido "APELLIDO" FROM "NATURAL" N, "OPERACION" O WHERE'+
       'O.fk_natural=N.rif ORDER BY o.monto_total LIMIT 10',
       (error, results) =>{
         if(error){
           reject(error)
         }
         data = results.rows
-        console.log(data)
         var headerFunction = function(Report) {
           Report.print("REPORTE DE MEJORES CLIENTES", {fontSize: 25, bold: true, underline:true, align: "center"});
           Report.newLine(2);
@@ -1821,7 +1821,7 @@ const listadoMejoresClientes = async(request, response) =>{
           .data(data)									 // Add our Data
           .pageHeader(headerFunction)    		         // Add a header
           .pageFooter(footerFunction)              // Add a footer
-          .detail("ENTRADA: {{HORA ENTRADA}}    SALIDA:{{HORA SALIDA}}    CEDULA:{{CEDULA}}    NOMBRE:{{PRIMER NOMBRE}}    {{APELLIDO}}")    // Put how we want to print out the data line.
+          .detail("CEDULA: {{CEDULA}}      NOMBRE:{{NOMBRE}}       APELLIDO:{{APELLIDO}}")    // Put how we want to print out the data line.
           .render(); 
       }
     )
@@ -1836,12 +1836,17 @@ const envioCarnet = async(request, response) =>{
 const crearTodosReportes = async()=>{
   await AsistenciaHorario()
   await horarioEmpleados()
+  await listadoMejoresClientes()
 
 }
+app
+  .route("/enviarMejoresClientes")
+  .get(envioMejoresClientes)
 
 app
   .route("/generarTodos")
   .get(crearTodosReportes)
+  .post(listadoMejoresClientes)
 
 app
   .route("/carnetusuario")
