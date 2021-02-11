@@ -1641,6 +1641,25 @@ const inventarioTienda = async(request, response) =>{
   }
 }
 
+const inventarioTiendaTabla = async(request, response) =>{
+  const{
+    tienda_id
+  } = request.body
+  pool.query(
+  'SELECT P.PRODUCTO_ID AS ID, P.NOMBRE, P.CATEGORIA, A.CANTIDAD, P.PRECIO FROM "TIENDA" T, "PRODUCTO" P, "ALMACEN" A '+
+  'WHERE T.tienda_id=A.fk_tienda AND A.fk_producto=P.producto_id AND T.tienda_id=$1',
+  [
+    tienda_id
+  ],
+  (error, results) =>{
+    if(error){
+      throw error
+    }
+    response.status(201).json(results.rows)
+  }
+  )
+}
+
 const reposicionInventarioPasillo = async(request, response) => {
   const{
     tienda_id
@@ -1715,6 +1734,10 @@ const postpruebaprueba = async(request, response) => {
   
 
 }
+
+app
+  .route("/inventariotiendatabla")
+  .post(inventarioTiendaTabla)
 
 app
   .route("/reponerInventarioPasillo")
