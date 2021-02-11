@@ -1637,6 +1637,7 @@ const horarioEmpleados = async(response) => {
   data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
   for(let i=2; i< data.length; i++){
     if(data[i].CEDULA != ''){
+      console.log(data[i])
       await llenarAsistencia(data[i])
     }
   }
@@ -1646,14 +1647,15 @@ const horarioEmpleados = async(response) => {
 const llenarAsistencia = async(empleado)=>{
   return new Promise((resolve, reject) =>{
     pool.query(
-      'INSERT INTO "ASISTENCIA (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO "ASISTENCIA" (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
       [
-        empleado.fecha,
-        empleado.horario_entrada,
-        empleado.horario_salida,
-        empleado.fk_empleado
+        empleado.FECHA,
+        empleado.hora_inicio,
+        empleado.hora_fin,
+        empleado.rif
       ],
       (error, results) =>{
+        console.log(error)
         if (error){
           reject(error)
         }
