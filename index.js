@@ -1744,12 +1744,24 @@ const postpruebaprueba = async(request, response) => {
         throw error
       }
       data = results.rows
-      const rpt = new Report("Asistencia.pdf")
-      .data(data)
-      .pageHeader(["REPORTE DE ASISTENCIA DE EMPLEADOS"])
-      .detail("{{HORA ENTRADA}} {{HORA SALIDA}} {{CEDULA}} {{PRIMER NOMBRE}} {{APELLIDO}}")
-      Report.aligment(CENTER)
-      .render()
+      var headerFunction = function(Report) {
+        Report.print("REPORTE DE ASISTENCIA", {fontSize: 22, bold: true, underline:true, align: "center"});
+        Report.newLine(2);
+    };
+
+    var footerFunction = function(Report) {
+        Report.line(Report.currentX(), Report.maxY()-18, Report.maxX(), Report.maxY()-18);
+        Report.pageNumber({text: "Page {0} of {1}", footer: true, align: "right"});
+        Report.print("Printed: "+(new Date().toLocaleDateString()), {y: Report.maxY()-14, align: "left"});
+    };
+
+    var rpt = new Report("Asistencia.pdf")
+        .margins(20)                                 // Change the Margins to 20 pixels
+        .data(data)									 // Add our Data
+        .pageHeader(headerFunction)    		         // Add a header
+        .pageFooter(footerFunction)                  // Add a footer
+        .detail("{{HORA ENTRADA}} {{HORA SALIDA}} {{CEDULA}} {{PRIMER NOMBRE}} {{APELLIDO}}")    // Put how we want to print out the data line.
+        .render();  
     }
   )
 }
