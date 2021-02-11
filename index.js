@@ -218,7 +218,7 @@ const postUsuario = async (request, response) => {
                         throw error;
                       }
                       pool.query(
-                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado AND e.rif=$1',
+                        'SELECT HO.hora_inicio, HO.hora_fin, HO.dia, HO.horario_id FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado AND e.rif=$1',
                         [rif],
                         (error, results) => {
                           if (error) {
@@ -1609,38 +1609,6 @@ const AsistenciaHorario = async() =>{
   )
 }
 
-const insertEmpleadoHorario = async(rif, horario_id) =>{
-  return new Promise((resolve, reject) =>{
-      pool.query(
-          'INSERT INTO "EMPLEADO_HORARIO" (fk_empleado, fk_horario) VALUES ($1, $2)',
-          [
-              rif,
-              horario_id
-          ],
-          (error, results) =>{
-              if (error){
-                  reject(error)
-              }
-              resolve(results.rowCount)
-          }
-      )
-  })
-}
-
-const todosEmpleadosSinHorario = async(rif, horario_id) =>{
-  return new Promise((resolve, reject) =>{
-      pool.query(
-          'SELECT rif FROM "EMPLEADO" WHERE rif NOT IN (SELECT fk_empleado FROM "EMPLEADO_HORARIO")',
-          (error, results) =>{
-              if (error){
-                  reject(error)
-              }
-              resolve(results.rows)
-          }
-      )
-  })
-}
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
       cb(null, 'uploads');
@@ -1663,37 +1631,36 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
   }
 });
 
-
-
-const horarioEmpleados = async(request, response) => {
+const horarioEmpleados = async(response) => {
   convertirArchivo()
-  data = JSON.parse(fs.readFileSync('output.json','utf-8'))
-  for(let i = 2; i < 480; i++){
-    if(data[i]['RIF'] != '' && data[i]['RIF'].length == 9 && data['HORA DE ENTRADA'] != "NaN:NaN"){
-      await wait(300)
-      await pool.query(
-        'SELECT * FROM "EMPLEADO" WHERE rif=$1',
-        [data[i]['RIF']],
-        (error, results) => {
-          if (error) {
-            throw error;
-          }
-          if(results.rowCount == 1){
-            pool.query(
-              'INSERT INTO "ASISTENCIA" (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
-              [data[i]['FECHA'], data[i]['HORA DE ENTRADA'], data[i]['HORA DE SALIDA'], data[i]['RIF']],
-              (error, results) => {
-                if (error) {
-                  throw error;
-                }
-              }
-            )
-          }
-        }
-      )
+  await convertirArchivo()
+  data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
+  for(let i=2; i< data.length; i++){
+    if(data[i].CEDULA != ''){
+      await llenarAsistencia(data[i])
     }
   }
-  response.status(201).json({mensaje:"listo"})
+  response.status(201).json({status: "Funciono", message: "Registro exitoso"})
+}
+
+const llenarAsistencia = async(empleado)=>{
+  return new Promise((resolve, reject) =>{
+    pool.query(
+      'INSERT INTO "ASISTENCIA (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
+      [
+        empleado.fecha,
+        empleado.horario_entrada,
+        empleado.horario_salida,
+        empleado.fk_empleado
+      ],
+      (error, results) =>{
+        if (error){
+          reject(error)
+        }
+        resolve(results.rowCount)
+      }
+    )
+  })
 }
 
 async function convertirArchivo(){
@@ -1709,10 +1676,21 @@ async function convertirArchivo(){
   });
 }
 
+
+
 const postpruebaprueba = async(request, response) => {
   await convertirArchivo()
   data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
+  for(let i=2; i< data.length; i++){
+    if(data[i].CEDULA != ''){
+      await llenarAsistencia(data[i])
+    }
+  }
 }
+
+app
+  .route("/horarioempleados")
+  .post(horarioEmpleados)
 
 app
   .route("/descuento")
