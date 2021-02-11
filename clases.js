@@ -254,7 +254,7 @@ class ValidadorUsuario extends Validador{
     }
     Empleado(usuarioEmpleado){
         switch(Object.keys(usuarioEmpleado).length){
-            case 17:
+            case 18:
                 if(this.campoVacio(usuarioEmpleado.primer_nombre) && this.campoVacio(usuarioEmpleado.primer_apellido) && this.campoVacio(usuarioEmpleado.cedula) 
                 && this.tipo_cedula(usuarioEmpleado.tipo_cedula) && this.contrasena(usuarioEmpleado.contrasena) 
                 && this.correo(usuarioEmpleado.correo_electronico) && this.rif(usuarioEmpleado.rif)){
@@ -333,7 +333,7 @@ class Contenedor{
     async ordenarHorario(horario){
         var obj = JSON.parse(horario)
         if(Object.keys(obj).length > 0){
-            console.log(obj)
+            console.log(obj + 'HORARIO')
             for(let i=0; i<Object.keys(obj).length; i++){
                 if(validador.hora(obj[i].hora_inicio) && validador.hora(obj[i].hora_fin)){
                     this.contenedor.push(await (new Horario('', obj[i].dia, obj[i].hora_inicio, obj[i].hora_fin,)).buscarHorarioSinId())
@@ -419,6 +419,7 @@ class Horario{
 
     async buscarHorarioSinId(){
         console.log(await readHorarioSinId(this))
+        console.log('HORARIO SIN ID')
         let horaRegistrada = (await readHorarioSinId(this))[0]
         this.id = horaRegistrada.horario_id
         return this
