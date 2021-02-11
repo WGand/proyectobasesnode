@@ -1357,6 +1357,7 @@ const postOrden = async(request, response) => {
     else if(tipo_compra == 'en linea'){
       await tienda.actualizarCantidadAlmacen(producto)
     }
+    await tienda.checkInventarioAlmacen()
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
@@ -1372,6 +1373,7 @@ const ordenPaga = async(request, response) =>{
     estatus,
     metodo
   } = request.body;
+  let tienda = new Tienda()
   let contenedor = new Contenedor(rif)
   let usuariogenerico = new Usuario()
   let operacion = new Operacion()
@@ -1388,6 +1390,7 @@ const ordenPaga = async(request, response) =>{
       await operacion.actualizarOperacionEstatus(estadoPagado)
       await operacion.actualizarOperacion(1)
       await contenedor.insertarMetodos(usuario.rif, usuario.tipo_usuario)
+      await tienda.checkInventarioAlmacen()
       response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
     }
     else{
@@ -1712,6 +1715,7 @@ const reponerInventarioPasillo = async(request, response) =>{
   tienda.id = tienda_id
   if(await tienda.buscarTiendaConId()){
     await tienda.reponerInventarioPasillo(inventario)
+    await tienda.checkInventarioAlmacen()
     response.status(201).json({ status: "Funciono", message: "Registro exitoso" })
   }
   else{
@@ -1810,14 +1814,17 @@ const todosEmpleadosSinHorario = async(rif, horario_id) =>{
               if (error){
                   reject(error)
               }
-              resolve(results.rowCount)
+              resolve(results.rows)
           }
       )
   })
 }
 
 const postpruebaprueba = async(request, response) => {
-  pool.query()
+  let empleados = await todosEmpleadosSinHorario()
+  for(let i=0; i<empleados.length; i++){
+    await insertEmpleadoHorario(empleados[i].rif, 1)
+  }
   
 }
 
