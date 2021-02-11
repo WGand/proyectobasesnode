@@ -224,9 +224,7 @@ const postUsuario = async (request, response) => {
                           if (error) {
                             throw error;
                           }
-                          datosUsuario[0]['hora_inicio'] = results.rows[0]['hora_inicio']
-                          datosUsuario[0]['hora_fin'] = results.rows[0]['hora_fin']
-                          datosUsuario[0]['dia'] = results.rows[0]['dia']
+                          datosUsuario[0]['horario'] = results.rows
                           pool.query(
                             'SELECT * FROM "EMPLEADO_CARGO" WHERE fk_empleado=$1',
                             [
@@ -1665,8 +1663,55 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
   }
 });
 
-const postpruebaprueba = async(request, response) => {
 
+
+const horarioEmpleados = async(request, response) => {
+  convertirArchivo()
+  data = JSON.parse(fs.readFileSync('output.json','utf-8'))
+  for(let i = 2; i < 480; i++){
+    if(data[i]['RIF'] != '' && data[i]['RIF'].length == 9 && data['HORA DE ENTRADA'] != "NaN:NaN"){
+      await wait(300)
+      await pool.query(
+        'SELECT * FROM "EMPLEADO" WHERE rif=$1',
+        [data[i]['RIF']],
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+          if(results.rowCount == 1){
+            pool.query(
+              'INSERT INTO "ASISTENCIA" (fecha, horario_entrada, horario_salida, fk_empleado) VALUES ($1, $2, $3, $4)',
+              [data[i]['FECHA'], data[i]['HORA DE ENTRADA'], data[i]['HORA DE SALIDA'], data[i]['RIF']],
+              (error, results) => {
+                if (error) {
+                  throw error;
+                }
+              }
+            )
+          }
+        }
+      )
+    }
+  }
+  response.status(201).json({mensaje:"listo"})
+}
+
+async function convertirArchivo(){
+  xlsxj({
+    input: "./uploads/horario.xlsx", 
+    output: "output.json"
+  }, function(err, result) {
+    if(err) {
+      console.error(err);
+    }else {
+      return result
+    }
+  });
+}
+
+const postpruebaprueba = async(request, response) => {
+  await convertirArchivo()
+  data = JSON.parse(fs.readFileSync('output.json', 'utf-8'))
 }
 
 app
