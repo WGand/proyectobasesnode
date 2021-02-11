@@ -218,7 +218,7 @@ const postUsuario = async (request, response) => {
                         throw error;
                       }
                       pool.query(
-                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado AND e.empleado=$1',
+                        'SELECT * FROM "HORARIO" HO, "EMPLEADO" E, "EMPLEADO_HORARIO" EH WHERE ho.horario_id = eh.fk_horario AND e.rif=eh.fk_empleado AND e.rif=$1',
                         [rif],
                         (error, results) => {
                           if (error) {
@@ -1649,13 +1649,12 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
       console.log(file);
-      cb(null, Date.now() + path.extname(file.originalname));
+      cb(null, file.originalname);
   }
 })
 
 const upload = multer({ storage: storage});
 
-//Upload route
 app.post('/upload', upload.single('file'), (req, res, next) => {
   try {
       return res.status(201).json({
