@@ -1667,7 +1667,7 @@ const reposicionInventarioPasillo = async(request, response) => {
     tienda_id
   } = request.body
   pool.query(
-    'SELECT A.CANTIDAD AS ALMACEN_CANTIDAD, PA.CANTIDAD AS PASILLO_CANTIDAD, P.NOMBRE AS PRODUCTO FROM "TIENDA" T, "PASILLO" PA, "PRODUCTO" P, "ALMACEN" A '+
+    'SELECT A.CANTIDAD AS ALMACEN_CANTIDAD, PA.CANTIDAD AS PASILLO_CANTIDAD, P.NOMBRE AS PRODUCTO, P.PRODUCTO_ID AS ID FROM "TIENDA" T, "PASILLO" PA, "PRODUCTO" P, "ALMACEN" A '+
     'WHERE A.fk_tienda=T.tienda_id AND PA.fk_tienda=T.tienda_id AND PA.cantidad<20 AND PA.fk_producto = P.producto_id AND A.fk_producto = P.producto_id AND T.tienda_id=$1;',
     [
       tienda_id
