@@ -1795,31 +1795,34 @@ const postpruebaprueba = async(request, response) => {
   }
 }
 
-const ingreso = async() =>{
-  return new Promise((resolve, reject) =>{
+const listadoMejoresClientes = async(request, response) =>{
+  return new Promise((resolve, reject)=>{ 
     pool.query(
-      'SELECT T.tienda_id, SUM(O.monto_total) FROM "TIENDA" T, "OPERACION" O, "OPERACION_ESTATUS" OE, "ESTATUS" E WHERE O.operacion_id=oe.fk_operacion AND '+
-      'E.estatus_id=oe.fk_estatus AND e.estatus=1 AND O.fk_tienda= t.tienda_id group by T.tienda_id',
-      (error, results)=>{
-        if(error){
-          reject(error)
-        }
-        resolve(results)
-      }
-    )
-  })
-}
-
-const egreso = async() =>{
-  return new Promise((resolve, reject) =>{
-    pool.query(
-      'SELECT "TIENDA".tienda_id, SUM(monto_total) FROM "OPERACION", "TIENDA" WHERE fk_empleado'+
-      'IS NULL AND fk_natural IS NULL AND fk_juridico IS NULL AND "TIENDA".tienda_id="OPERACION".fk_tienda group by "TIENDA".tienda_id',
+      'SELECT N.cedula_identidad, N.primer_nombre, N.primer_apellido FROM "NATURAL" N, "OPERACION" O WHERE'+
+      'O.fk_natural=N.rif ORDER BY o.monto_total LIMIT 10',
       (error, results) =>{
         if(error){
           reject(error)
         }
-        resolve(results)
+        data = results.rows
+        console.log(data)
+        var headerFunction = function(Report) {
+          Report.print("REPORTE DE MEJORES CLIENTES", {fontSize: 25, bold: true, underline:true, align: "center"});
+          Report.newLine(2);
+      };
+  
+      var footerFunction = function(Report) {
+          Report.line(Report.currentX(), Report.maxY()-8, Report.maxX(), Report.maxY()-8);
+          Report.pageNumber({text: "Pagina {0} of {1}", footer: true, align: "right"});
+      };
+  
+      var rpt = new Report("MejoresClientes.pdf")
+          .margins(20)                                 // Change the Margins to 20 pixels
+          .data(data)									 // Add our Data
+          .pageHeader(headerFunction)    		         // Add a header
+          .pageFooter(footerFunction)              // Add a footer
+          .detail("ENTRADA: {{HORA ENTRADA}}    SALIDA:{{HORA SALIDA}}    CEDULA:{{CEDULA}}    NOMBRE:{{PRIMER NOMBRE}}    {{APELLIDO}}")    // Put how we want to print out the data line.
+          .render(); 
       }
     )
   })
@@ -1835,6 +1838,10 @@ const crearTodosReportes = async()=>{
   await horarioEmpleados()
 
 }
+
+app
+  .route("/generarTodos")
+  .get(crearTodosReportes)
 
 app
   .route("/carnetusuario")
